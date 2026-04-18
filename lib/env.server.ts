@@ -11,10 +11,12 @@ const schema = z.object({
   STRIPE_WEBHOOK_SECRET: z.string().optional(),
 });
 
+const emptyToUndefined = (v: string | undefined) => (v === "" ? undefined : v);
+
 export const serverEnv = schema.parse({
-  SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
-  SENTRY_AUTH_TOKEN: process.env.SENTRY_AUTH_TOKEN,
-  RESEND_API_KEY: process.env.RESEND_API_KEY,
-  STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
-  STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
+  SUPABASE_SERVICE_ROLE_KEY: emptyToUndefined(process.env.SUPABASE_SERVICE_ROLE_KEY),
+  SENTRY_AUTH_TOKEN: emptyToUndefined(process.env.SENTRY_AUTH_TOKEN),
+  RESEND_API_KEY: emptyToUndefined(process.env.RESEND_API_KEY),
+  STRIPE_SECRET_KEY: emptyToUndefined(process.env.STRIPE_SECRET_KEY),
+  STRIPE_WEBHOOK_SECRET: emptyToUndefined(process.env.STRIPE_WEBHOOK_SECRET),
 });

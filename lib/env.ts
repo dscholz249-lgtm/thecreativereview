@@ -10,11 +10,16 @@ const schema = z.object({
   NEXT_PUBLIC_SENTRY_DSN: z.string().url().optional(),
 });
 
+// Coerce "" → undefined so `.default()` and `.optional()` kick in when a
+// Dockerfile ENV is set to an empty string (e.g. a build ARG was not passed
+// through). Without this, Zod sees "" and fails `.url()` validation.
+const emptyToUndefined = (v: string | undefined) => (v === "" ? undefined : v);
+
 const raw = {
-  NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
-  NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-  NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
-  NEXT_PUBLIC_SENTRY_DSN: process.env.NEXT_PUBLIC_SENTRY_DSN,
+  NEXT_PUBLIC_SUPABASE_URL: emptyToUndefined(process.env.NEXT_PUBLIC_SUPABASE_URL),
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: emptyToUndefined(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY),
+  NEXT_PUBLIC_APP_URL: emptyToUndefined(process.env.NEXT_PUBLIC_APP_URL),
+  NEXT_PUBLIC_SENTRY_DSN: emptyToUndefined(process.env.NEXT_PUBLIC_SENTRY_DSN),
 };
 
 export const env = schema.parse(raw);
