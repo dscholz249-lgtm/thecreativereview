@@ -11,7 +11,10 @@
  * Prints the seeded admin credentials so you can log in and see the data.
  */
 
-import "dotenv/config";
+import { config as loadEnv } from "dotenv";
+// Next.js loads .env.local automatically at runtime, but Node scripts don't.
+// Prefer .env.local (where secrets live) and fall back to .env.
+loadEnv({ path: [".env.local", ".env"] });
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/database.types";
 
