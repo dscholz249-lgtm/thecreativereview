@@ -37,7 +37,9 @@ RUN npm run build
 FROM node:24-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
-ENV PORT=3000
+# PORT is intentionally NOT hardcoded — Railway (and most platforms) inject
+# it at runtime. Next.js standalone server.js reads process.env.PORT and
+# falls back to 3000 locally.
 ENV HOSTNAME=0.0.0.0
 
 RUN addgroup --system --gid 1001 nodejs \
