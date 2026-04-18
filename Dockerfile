@@ -4,7 +4,11 @@
 FROM node:24-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN npm ci --no-audit --no-fund
+# `npm install` instead of `npm ci` — npm's lockfile omits platform-specific
+# optional deps (WASM fallbacks like @emnapi/*) when generated on macOS, and
+# `npm ci` is strict enough to refuse the install. `npm install` resolves
+# those at build time on linux/amd64. ~10s slower, reliably portable.
+RUN npm install --no-audit --no-fund
 
 FROM node:24-alpine AS builder
 WORKDIR /app
@@ -33,7 +37,9 @@ RUN npm run build
 FROM node:24-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
-ENV PORT=3000
+# PORT is intentionally NOT hardcoded — Railway (and most platforms) inject
+# it at runtime. Next.js standalone server.js reads process.env.PORT and
+# falls back to 3000 locally.
 ENV HOSTNAME=0.0.0.0
 
 RUN addgroup --system --gid 1001 nodejs \
