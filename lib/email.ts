@@ -12,9 +12,6 @@ import { serverEnv } from "@/lib/env.server";
 // Milestone 3 uses this for the reviewer-invite email. Milestone 4 adds the
 // new-asset, decision-submitted, project-complete, digest, and reminder emails.
 
-const FROM_ADDRESS =
-  process.env.EMAIL_FROM ?? "Creative Review <onboarding@resend.dev>";
-
 let _client: Resend | null = null;
 function client() {
   if (_client) return _client;
@@ -42,7 +39,7 @@ export async function sendEmail(params: {
   }
 
   const { data, error } = await client().emails.send({
-    from: FROM_ADDRESS,
+    from: serverEnv.EMAIL_FROM,
     to: params.to,
     subject: params.subject,
     react: params.react,
