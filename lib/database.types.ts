@@ -431,7 +431,17 @@ export type Database = {
       };
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      submit_decision: {
+        Args: {
+          p_asset_version_id: string;
+          p_verdict: DecisionVerdict;
+          p_feedback_text?: string | null;
+          p_annotations?: Json;
+        };
+        Returns: string;
+      };
+    };
     Enums: {
       workspace_plan: WorkspacePlan;
       admin_role: AdminRole;
