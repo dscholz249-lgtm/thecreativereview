@@ -33,7 +33,12 @@ export default async function ClientDetailPage({
         description={client.primary_email}
         breadcrumbs={[{ href: "/clients", label: "Clients" }, { label: client.name }]}
         actions={
-          <LinkButton href={`/clients/${id}/projects/new`}>New project</LinkButton>
+          <>
+            <LinkButton href={`/clients/${id}/reviewers`} variant="outline">
+              Manage reviewers
+            </LinkButton>
+            <LinkButton href={`/clients/${id}/projects/new`}>New project</LinkButton>
+          </>
         }
       />
 
