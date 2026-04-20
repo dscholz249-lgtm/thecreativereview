@@ -10,21 +10,24 @@ export default async function HomePage() {
 
   // Role-aware routing for authenticated users.
   if (user) {
-    const [{ data: reviewer }, { data: admin }] = await Promise.all([
+    const [{ data: admin }, { data: reviewer }] = await Promise.all([
+      supabase
+        .from("admin_profiles")
+        .select("user_id")
+        .eq("user_id", user.id)
+        .maybeSingle(),
       supabase
         .from("client_reviewers")
         .select("id")
         .eq("auth_user_id", user.id)
         .limit(1)
         .maybeSingle(),
-      supabase
-        .from("admin_profiles")
-        .select("user_id")
-        .eq("user_id", user.id)
-        .maybeSingle(),
     ]);
-    if (reviewer) redirect("/review/my-reviews");
+    // Admin takes precedence for the dual-role case (an admin who was also
+    // invited as a reviewer on their own or another workspace). They can
+    // still reach their inbox by navigating to /review/my-reviews manually.
     if (admin) redirect("/dashboard");
+    if (reviewer) redirect("/review/my-reviews");
     // Authenticated but neither — fall through to the landing page.
   }
 

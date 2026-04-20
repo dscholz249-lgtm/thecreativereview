@@ -19,6 +19,20 @@ export default async function AppLayout({
     .eq("user_id", user.id)
     .maybeSingle();
 
+  // Role gate: if there's no admin_profile, the user is not an admin and
+  // should never see the admin shell. Reviewers go to their inbox; anyone
+  // else (shouldn't happen) back to the landing.
+  if (!profile) {
+    const { data: reviewer } = await supabase
+      .from("client_reviewers")
+      .select("id")
+      .eq("auth_user_id", user.id)
+      .limit(1)
+      .maybeSingle();
+    if (reviewer) redirect("/review/my-reviews");
+    redirect("/");
+  }
+
   const workspaceName =
     (profile?.workspaces as { name: string } | null)?.name ?? "Workspace";
 
