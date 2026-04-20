@@ -132,7 +132,7 @@ export default async function MyReviewsPage({
                   )}
                 </div>
                 <Link
-                  href={`/assets/${a.id}`}
+                  href={`/review/assets/${a.id}`}
                   className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
                 >
                   {tab === "pending" ? "Review" : "View"}
