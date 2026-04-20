@@ -160,7 +160,7 @@ function TabLink({
   const isActive = tab === active;
   return (
     <Link
-      href={`/my-reviews?tab=${tab}`}
+      href={`/review/my-reviews?tab=${tab}`}
       className={cn(
         "rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
         isActive
