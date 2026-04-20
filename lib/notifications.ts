@@ -26,13 +26,20 @@ export async function notifyNewAssetUploadedFromVersion(
 ): Promise<void> {
   const admin = createAdminClient();
 
-  const { data: version } = await admin
+  // `assets` has TWO foreign keys touching asset_versions:
+  //   1. asset_versions.asset_id → assets.id           (the "belongs to" direction)
+  //   2. assets.current_version_id → asset_versions.id (back-reference)
+  // Without a hint, PostgREST refuses the embed with PGRST201 ("more than one
+  // relationship was found"). The constraint-name hint (`asset_versions_asset_id_fkey`)
+  // pins this to FK #1 explicitly. Silent until now because we were ignoring
+  // `.error` — no notifications.rows after upload.
+  const { data: version, error } = await admin
     .from("asset_versions")
     .select(
       `
       id,
       upload_note,
-      assets!inner (
+      assets!asset_versions_asset_id_fkey!inner (
         id,
         name,
         type,
@@ -53,7 +60,14 @@ export async function notifyNewAssetUploadedFromVersion(
     .eq("id", versionId)
     .maybeSingle();
 
-  if (!version) return;
+  if (error) {
+    console.error("[notify] new-asset version lookup failed", error);
+    return;
+  }
+  if (!version) {
+    console.warn("[notify] new-asset version not found", { versionId });
+    return;
+  }
   const asset = version.assets as unknown as {
     id: string;
     name: string;
@@ -130,7 +144,10 @@ export async function notifyDecisionSubmitted(params: {
   // Latest decision on this version is the one we just inserted (per PRD 7.9
   // decisions are immutable, and submit_decision enforces unique reviewer
   // per version — so reading max(created_at) here is safe).
-  const { data: decision } = await admin
+  //
+  // Same two-FK issue on `asset_versions → assets` as notifyNewAssetUploaded;
+  // hint pins to asset_versions_asset_id_fkey. See that helper's comment.
+  const { data: decision, error } = await admin
     .from("decisions")
     .select(
       `
@@ -141,7 +158,7 @@ export async function notifyDecisionSubmitted(params: {
       client_reviewers!inner ( id, email, name ),
       asset_versions!inner (
         id,
-        assets!inner (
+        assets!asset_versions_asset_id_fkey!inner (
           id,
           name,
           projects!inner (
@@ -158,7 +175,16 @@ export async function notifyDecisionSubmitted(params: {
     .limit(1)
     .maybeSingle();
 
-  if (!decision) return;
+  if (error) {
+    console.error("[notify] decision lookup failed", error);
+    return;
+  }
+  if (!decision) {
+    console.warn("[notify] decision not found for version", {
+      asset_version_id: params.asset_version_id,
+    });
+    return;
+  }
 
   const reviewer = decision.client_reviewers as unknown as {
     id: string;
