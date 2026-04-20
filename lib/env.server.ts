@@ -22,6 +22,7 @@ const schema = z.object({
   EMAIL_FROM: z.string().default("Creative Review <onboarding@resend.dev>"),
   STRIPE_SECRET_KEY: z.string().optional(),
   STRIPE_WEBHOOK_SECRET: z.string().optional(),
+  AMPLITUDE_API_KEY: z.string().optional(),
 });
 
 type ServerEnv = z.infer<typeof schema>;
@@ -39,6 +40,7 @@ function load(): ServerEnv {
     EMAIL_FROM: emptyToUndefined(process.env.EMAIL_FROM),
     STRIPE_SECRET_KEY: emptyToUndefined(process.env.STRIPE_SECRET_KEY),
     STRIPE_WEBHOOK_SECRET: emptyToUndefined(process.env.STRIPE_WEBHOOK_SECRET),
+    AMPLITUDE_API_KEY: emptyToUndefined(process.env.AMPLITUDE_API_KEY),
   });
   return cached;
 }

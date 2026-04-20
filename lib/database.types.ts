@@ -32,6 +32,8 @@ export type Database = {
           admin_seat_count: number;
           custom_domain: string | null;
           white_label: boolean;
+          stripe_customer_id: string | null;
+          stripe_subscription_id: string | null;
           created_at: Timestamp;
         };
         Insert: {
@@ -42,6 +44,8 @@ export type Database = {
           admin_seat_count?: number;
           custom_domain?: string | null;
           white_label?: boolean;
+          stripe_customer_id?: string | null;
+          stripe_subscription_id?: string | null;
           created_at?: Timestamp;
         };
         Update: {
@@ -52,6 +56,8 @@ export type Database = {
           admin_seat_count?: number;
           custom_domain?: string | null;
           white_label?: boolean;
+          stripe_customer_id?: string | null;
+          stripe_subscription_id?: string | null;
           created_at?: Timestamp;
         };
         Relationships: [];
