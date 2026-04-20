@@ -17,6 +17,7 @@ import {
   createAssetWithVersionAction,
   type ActionResult,
 } from "@/app/(app)/assets/actions";
+import { MAX_UPLOAD_BYTES } from "@/lib/domain/asset";
 
 type AssetType = "image" | "document" | "design" | "wireframe";
 
@@ -27,6 +28,7 @@ export function NewAssetForm({ projectId }: { projectId: string }) {
   );
   const [type, setType] = useState<AssetType>("image");
   const [source, setSource] = useState<"file" | "url">("file");
+  const [fileError, setFileError] = useState<string | null>(null);
 
   const allowUrl = type === "design" || type === "wireframe";
   const effectiveSource = allowUrl ? source : "file";
@@ -36,7 +38,22 @@ export function NewAssetForm({ projectId }: { projectId: string }) {
   return (
     <Card>
       <CardContent className="py-6">
-        <form action={action} className="flex flex-col gap-4" encType="multipart/form-data">
+        <form
+          action={(formData) => {
+            // Block oversize uploads before the network round-trip. The same
+            // limit is enforced server-side in the action + by Next's
+            // serverActions.bodySizeLimit in next.config.ts.
+            const f = formData.get("file");
+            if (f instanceof File && f.size > MAX_UPLOAD_BYTES) {
+              setFileError(formatTooLarge(f.size));
+              return;
+            }
+            setFileError(null);
+            action(formData);
+          }}
+          className="flex flex-col gap-4"
+          encType="multipart/form-data"
+        >
           <input type="hidden" name="project_id" value={projectId} />
 
           <FormField label="Name" name="name" error={err?.fieldErrors?.name}>
@@ -85,7 +102,7 @@ export function NewAssetForm({ projectId }: { projectId: string }) {
               label="File"
               name="file"
               hint="Up to 25 MB. Images (PNG/JPEG/SVG) support annotations; PDFs are text-only feedback."
-              error={err?.fieldErrors?.file}
+              error={fileError ?? err?.fieldErrors?.file}
             >
               <Input
                 id="file"
@@ -93,6 +110,14 @@ export function NewAssetForm({ projectId }: { projectId: string }) {
                 type="file"
                 accept={acceptFor(type)}
                 required
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f && f.size > MAX_UPLOAD_BYTES) {
+                    setFileError(formatTooLarge(f.size));
+                  } else {
+                    setFileError(null);
+                  }
+                }}
               />
             </FormField>
           ) : (
@@ -153,4 +178,10 @@ function acceptFor(type: AssetType): string {
     case "wireframe":
       return "image/png,image/jpeg";
   }
+}
+
+function formatTooLarge(bytes: number): string {
+  const mb = (bytes / (1024 * 1024)).toFixed(1);
+  const capMb = Math.floor(MAX_UPLOAD_BYTES / (1024 * 1024));
+  return `File is ${mb} MB — the upload limit is ${capMb} MB. Try compressing the image or splitting the PDF.`;
 }
