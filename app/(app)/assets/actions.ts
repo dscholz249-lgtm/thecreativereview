@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/server";
 import { CreateAssetSchema } from "@/lib/domain/asset";
 import { sanitizeUploadNote } from "@/lib/domain/upload-note";
 import { ASSET_BUCKET, buildStoragePath } from "@/lib/supabase/storage";
+import { notifyNewAssetUploadedFromVersion } from "@/lib/notifications";
 
 export type ActionResult =
   | { ok: true }
@@ -134,6 +135,15 @@ export async function createAssetWithVersionAction(
     .update({ current_version_id: versionId })
     .eq("id", assetId);
 
+  // Fire-and-forget notification. Awaited here (vs `void notify(...)`) so the
+  // serverless function stays alive long enough to send. Errors inside do not
+  // fail the upload — the helper swallows and logs.
+  try {
+    await notifyNewAssetUploadedFromVersion(versionId);
+  } catch (err) {
+    console.error("[notify] new asset uploaded failed", err);
+  }
+
   revalidatePath(`/projects/${parsedAsset.data.project_id}`);
   revalidatePath("/dashboard");
   redirect(`/assets/${assetId}`);
@@ -215,6 +225,12 @@ export async function createNewVersionAction(
     .from("assets")
     .update({ current_version_id: versionId, status: "pending" })
     .eq("id", assetId.data);
+
+  try {
+    await notifyNewAssetUploadedFromVersion(versionId);
+  } catch (err) {
+    console.error("[notify] new asset uploaded (new version) failed", err);
+  }
 
   revalidatePath(`/assets/${assetId.data}`);
   revalidatePath("/dashboard");
