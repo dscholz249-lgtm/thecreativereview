@@ -3,7 +3,7 @@ import type Stripe from "stripe";
 import { stripe } from "@/server/stripe";
 import { serverEnv } from "@/lib/env.server";
 import { createAdminClient } from "@/server/admin-client";
-import { planFromPriceId } from "@/lib/stripe/config";
+import { planFromSubscription } from "@/lib/stripe/config";
 import type { WorkspacePlan } from "@/lib/database.types";
 
 // Stripe webhook. Handles the subset of events that affect workspaces.plan:
@@ -134,14 +134,6 @@ async function handleSubscriptionDeleted(
     .from("workspaces")
     .update({ plan: "oss", stripe_subscription_id: null })
     .eq("id", workspaceId);
-}
-
-function planFromSubscription(
-  subscription: Stripe.Subscription,
-): WorkspacePlan | null {
-  const priceId = subscription.items.data[0]?.price?.id;
-  if (!priceId) return null;
-  return planFromPriceId(priceId);
 }
 
 // Resolve workspace_id by trying subscription metadata first (set on checkout

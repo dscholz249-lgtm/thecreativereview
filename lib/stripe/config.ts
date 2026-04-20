@@ -25,3 +25,17 @@ export function planFromPriceId(priceId: string): PaidPlan | null {
   }
   return null;
 }
+
+// Shape we care about from Stripe's Subscription type — keeping this narrow
+// so the helper is testable without importing the Stripe SDK.
+type SubscriptionLike = {
+  items: { data: Array<{ price?: { id?: string | null } | null }> };
+};
+
+export function planFromSubscription(
+  subscription: SubscriptionLike,
+): PaidPlan | null {
+  const priceId = subscription.items.data[0]?.price?.id;
+  if (!priceId) return null;
+  return planFromPriceId(priceId);
+}
