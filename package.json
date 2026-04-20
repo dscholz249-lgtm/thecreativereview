@@ -15,7 +15,8 @@
     "db:stop": "supabase stop",
     "db:reset": "supabase db reset && npm run db:seed",
     "db:seed": "tsx scripts/seed.ts",
-    "db:types": "supabase gen types typescript --local > lib/database.types.ts"
+    "db:types": "supabase gen types typescript --local > lib/database.types.ts",
+    "worker:digest": "tsx workers/digest.ts"
   },
   "dependencies": {
     "@amplitude/analytics-node": "^1.5.54",
