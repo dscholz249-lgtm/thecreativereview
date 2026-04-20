@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { FormField } from "@/components/form-field";
 import { createNewVersionAction } from "@/app/(app)/assets/actions";
+import { MAX_UPLOAD_BYTES } from "@/lib/domain/asset";
 
 export function UploadVersionDialog({
   assetId,
@@ -35,6 +36,14 @@ export function UploadVersionDialog({
 
   function handleSubmit(formData: FormData) {
     setError(null);
+    // Client-side size check — matches the Server Action's MAX_UPLOAD_BYTES +
+    // next.config.ts serverActions.bodySizeLimit. Prevents the Next
+    // "Body exceeded ... limit" crash from ever reaching Sentry.
+    const f = formData.get("file");
+    if (f instanceof File && f.size > MAX_UPLOAD_BYTES) {
+      setError(formatTooLarge(f.size));
+      return;
+    }
     startTransition(async () => {
       const result = await createNewVersionAction(null, formData);
       if (result.ok === false) {
@@ -89,6 +98,14 @@ export function UploadVersionDialog({
                 type="file"
                 accept={acceptFor(assetType)}
                 required
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f && f.size > MAX_UPLOAD_BYTES) {
+                    setError(formatTooLarge(f.size));
+                  } else if (error && error.startsWith("File is")) {
+                    setError(null);
+                  }
+                }}
               />
             </FormField>
           ) : (
@@ -139,4 +156,10 @@ function acceptFor(type: string): string {
     default:
       return "";
   }
+}
+
+function formatTooLarge(bytes: number): string {
+  const mb = (bytes / (1024 * 1024)).toFixed(1);
+  const capMb = Math.floor(MAX_UPLOAD_BYTES / (1024 * 1024));
+  return `File is ${mb} MB — the upload limit is ${capMb} MB. Try compressing the image or splitting the PDF.`;
 }
