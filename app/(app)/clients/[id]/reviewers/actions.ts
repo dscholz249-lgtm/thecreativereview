@@ -91,7 +91,10 @@ export async function inviteReviewerAction(
     (u) => u.email?.toLowerCase() === parsed.data.email.toLowerCase(),
   );
 
-  const redirectTo = `${env.NEXT_PUBLIC_APP_URL}/auth/callback?next=/review/my-reviews`;
+  // No query string — Supabase's allow-list glob matching doesn't always
+  // play well with `?next=…`, and we don't need it: the callback sniffs
+  // user type (reviewer vs admin) and routes accordingly.
+  const redirectTo = `${env.NEXT_PUBLIC_APP_URL}/auth/callback`;
   const { data: linkData, error: linkError } = await admin.auth.admin.generateLink({
     type: alreadyExists ? "magiclink" : "invite",
     email: parsed.data.email,
