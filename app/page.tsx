@@ -8,7 +8,25 @@ export default async function HomePage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (user) redirect("/dashboard");
+  // Role-aware routing for authenticated users.
+  if (user) {
+    const [{ data: reviewer }, { data: admin }] = await Promise.all([
+      supabase
+        .from("client_reviewers")
+        .select("id")
+        .eq("auth_user_id", user.id)
+        .limit(1)
+        .maybeSingle(),
+      supabase
+        .from("admin_profiles")
+        .select("user_id")
+        .eq("user_id", user.id)
+        .maybeSingle(),
+    ]);
+    if (reviewer) redirect("/review/my-reviews");
+    if (admin) redirect("/dashboard");
+    // Authenticated but neither — fall through to the landing page.
+  }
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center gap-8 p-8">
