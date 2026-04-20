@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { CreateClientSchema, UpdateClientSchema } from "@/lib/domain/client";
+import { track } from "@/lib/analytics";
 
 export type ActionResult =
   | { ok: true }
@@ -50,12 +51,21 @@ export async function createClientAction(
   if (!workspace_id) return { ok: false, error: "No workspace found." };
 
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   const { data, error } = await supabase
     .from("clients")
     .insert({ ...parsed.data, workspace_id })
     .select("id")
     .single();
   if (error || !data) return { ok: false, error: error?.message ?? "Insert failed." };
+
+  track("client_created", {
+    user_id: user?.id ?? null,
+    workspace_id,
+    properties: { client_id: data.id },
+  });
 
   revalidatePath("/clients");
   redirect(`/clients/${data.id}`);

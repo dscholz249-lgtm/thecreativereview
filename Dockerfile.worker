@@ -1,0 +1,32 @@
+# syntax=docker/dockerfile:1.7
+# Dockerfile for the Railway cron worker (`npm run worker:digest`).
+#
+# Runs on an hourly cron trigger; each invocation scans for reviewers whose
+# local time is in the Friday-noon hour and sends the weekly digest.
+#
+# Separate image from the Next.js app so the worker container is lean and
+# doesn't carry the web server runtime. Shares the source tree + node_modules
+# at build time, but the final layer only installs production deps + tsx.
+
+FROM node:24-alpine AS deps
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm install --no-audit --no-fund
+
+FROM node:24-alpine AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+RUN addgroup --system --gid 1001 nodejs \
+  && adduser --system --uid 1001 worker
+USER worker
+
+COPY --from=deps --chown=worker:nodejs /app/node_modules ./node_modules
+COPY --chown=worker:nodejs package.json tsconfig.json ./
+COPY --chown=worker:nodejs workers ./workers
+COPY --chown=worker:nodejs lib ./lib
+COPY --chown=worker:nodejs emails ./emails
+
+# Railway invokes this image on a cron schedule — each run is a one-shot
+# process that exits 0 (sent, nothing to do) or non-zero (failure + Sentry
+# alert via exitCode). No long-running server here.
+CMD ["npm", "run", "worker:digest"]

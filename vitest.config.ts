@@ -7,6 +7,11 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": resolve(__dirname, "."),
+      // `server-only` is a runtime-nothing marker in Next 13+; vitest doesn't
+      // ship the Next polyfill, so tests that pull in server-only modules
+      // (lib/analytics, lib/notifications) fail at import. Alias to a harmless
+      // no-op.
+      "server-only": resolve(__dirname, "tests/stubs/server-only.ts"),
     },
   },
   test: {

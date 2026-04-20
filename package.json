@@ -15,9 +15,11 @@
     "db:stop": "supabase stop",
     "db:reset": "supabase db reset && npm run db:seed",
     "db:seed": "tsx scripts/seed.ts",
-    "db:types": "supabase gen types typescript --local > lib/database.types.ts"
+    "db:types": "supabase gen types typescript --local > lib/database.types.ts",
+    "worker:digest": "tsx workers/digest.ts"
   },
   "dependencies": {
+    "@amplitude/analytics-node": "^1.5.54",
     "@base-ui/react": "^1.4.0",
     "@react-email/components": "^1.0.12",
     "@react-email/render": "^2.0.7",
@@ -32,6 +34,7 @@
     "react-dom": "19.2.4",
     "resend": "^6.12.0",
     "shadcn": "^4.3.0",
+    "stripe": "^22.0.2",
     "tailwind-merge": "^3.5.0",
     "tw-animate-css": "^1.4.0",
     "zod": "^4.3.6"

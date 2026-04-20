@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { PageHeading, LinkButton } from "@/components/page-heading";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { RemindReviewersButton } from "./remind-reviewers-button";
 
 export default async function ProjectDetailPage({
   params,
@@ -15,7 +16,9 @@ export default async function ProjectDetailPage({
 
   const { data: project } = await supabase
     .from("projects")
-    .select("id, name, description, status, deadline, client_id, clients(id, name)")
+    .select(
+      "id, name, description, status, deadline, client_id, last_reminded_at, clients(id, name)",
+    )
     .eq("id", id)
     .maybeSingle();
   if (!project) notFound();
@@ -40,7 +43,20 @@ export default async function ProjectDetailPage({
           { label: project.name },
         ]}
         actions={
-          <LinkButton href={`/projects/${id}/assets/new`}>New asset</LinkButton>
+          <>
+            <RemindReviewersButton
+              projectId={id}
+              cooldownUntilIso={
+                project.last_reminded_at
+                  ? new Date(
+                      new Date(project.last_reminded_at).getTime() +
+                        24 * 60 * 60 * 1000,
+                    ).toISOString()
+                  : null
+              }
+            />
+            <LinkButton href={`/projects/${id}/assets/new`}>New asset</LinkButton>
+          </>
         }
       />
 

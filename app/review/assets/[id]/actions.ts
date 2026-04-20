@@ -8,6 +8,11 @@ import {
   DecisionInputSchema,
   AnnotationInputSchema,
 } from "@/lib/domain/decision";
+import {
+  notifyDecisionSubmitted,
+  notifyProjectCompletedIfNeeded,
+} from "@/lib/notifications";
+import { track } from "@/lib/analytics";
 
 export type ActionResult =
   | { ok: true }
@@ -48,6 +53,12 @@ export async function approveDecisionAction(
   });
 
   if (error) return { ok: false, error: error.message };
+
+  await fireDecisionNotifications(
+    supabase,
+    assetId.data,
+    parsed.data.asset_version_id,
+  );
 
   revalidatePath(`/review/assets/${assetId.data}`);
   revalidatePath("/review/my-reviews");
@@ -109,7 +120,62 @@ export async function rejectDecisionAction(
 
   if (error) return { ok: false, error: error.message };
 
+  // Fine-grained analytics for the reject path so we can distinguish
+  // "pins only" from "text only" from "both" without reading DB state.
+  if (parsed.data.annotations.length > 0) {
+    track("annotation_created", {
+      properties: {
+        asset_version_id: parsed.data.asset_version_id,
+        count: parsed.data.annotations.length,
+      },
+    });
+  }
+  if (parsed.data.feedback_text) {
+    track("feedback_submitted", {
+      properties: {
+        asset_version_id: parsed.data.asset_version_id,
+        length: parsed.data.feedback_text.length,
+      },
+    });
+  }
+
+  await fireDecisionNotifications(
+    supabase,
+    assetId.data,
+    parsed.data.asset_version_id,
+  );
+
   revalidatePath(`/review/assets/${assetId.data}`);
   revalidatePath("/review/my-reviews");
   redirect("/review/my-reviews");
+}
+
+// Fires both the decision-submitted admin email and — if the decision just
+// flipped the last pending asset — the project-completed email. Best-effort:
+// email failures log but never fail the action.
+async function fireDecisionNotifications(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  assetId: string,
+  assetVersionId: string,
+): Promise<void> {
+  try {
+    await notifyDecisionSubmitted({ asset_version_id: assetVersionId });
+  } catch (err) {
+    console.error("[notify] decision submitted failed", err);
+  }
+
+  // Look up project_id so we can check completion. The reviewer has RLS
+  // select on their clients' assets, so this is allowed.
+  const { data: asset } = await supabase
+    .from("assets")
+    .select("project_id")
+    .eq("id", assetId)
+    .maybeSingle();
+  if (!asset) return;
+
+  try {
+    await notifyProjectCompletedIfNeeded(asset.project_id);
+  } catch (err) {
+    console.error("[notify] project completed failed", err);
+  }
 }
