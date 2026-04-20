@@ -47,7 +47,7 @@ export default async function RequestChangesPage({
     <>
       <header className="mb-5">
         <Link
-          href={`/assets/${asset.id}`}
+          href={`/review/assets/${asset.id}`}
           className="text-xs text-neutral-500 hover:text-neutral-800"
         >
           ← Back to review

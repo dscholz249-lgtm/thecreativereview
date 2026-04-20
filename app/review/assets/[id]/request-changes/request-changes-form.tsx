@@ -135,7 +135,7 @@ export function RequestChangesForm({
         </p>
         <div className="flex gap-2">
           <Link
-            href={`/assets/${assetId}`}
+            href={`/review/assets/${assetId}`}
             className="inline-flex items-center rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-sm font-medium text-neutral-800 hover:bg-neutral-100"
           >
             Back

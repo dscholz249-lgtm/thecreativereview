@@ -148,7 +148,7 @@ export default async function ReviewerAssetPage({
             <div className="flex flex-col gap-2">
               <ApproveButton assetId={asset.id} versionId={version.id} />
               <Link
-                href={`/assets/${asset.id}/request-changes`}
+                href={`/review/assets/${asset.id}/request-changes`}
                 className={cn(buttonVariants({ variant: "outline" }))}
               >
                 Request changes
