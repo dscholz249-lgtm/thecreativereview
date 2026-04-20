@@ -16,6 +16,10 @@ const schema = z.object({
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
   SENTRY_AUTH_TOKEN: z.string().optional(),
   RESEND_API_KEY: z.string().optional(),
+  // Falls back to Resend's sandbox sender if unset. For real delivery,
+  // set this to an address on a domain verified in your Resend account,
+  // e.g. "Creative Review <no-reply@yourdomain.com>".
+  EMAIL_FROM: z.string().default("Creative Review <onboarding@resend.dev>"),
   STRIPE_SECRET_KEY: z.string().optional(),
   STRIPE_WEBHOOK_SECRET: z.string().optional(),
 });
@@ -32,6 +36,7 @@ function load(): ServerEnv {
     SUPABASE_SERVICE_ROLE_KEY: emptyToUndefined(process.env.SUPABASE_SERVICE_ROLE_KEY),
     SENTRY_AUTH_TOKEN: emptyToUndefined(process.env.SENTRY_AUTH_TOKEN),
     RESEND_API_KEY: emptyToUndefined(process.env.RESEND_API_KEY),
+    EMAIL_FROM: emptyToUndefined(process.env.EMAIL_FROM),
     STRIPE_SECRET_KEY: emptyToUndefined(process.env.STRIPE_SECRET_KEY),
     STRIPE_WEBHOOK_SECRET: emptyToUndefined(process.env.STRIPE_WEBHOOK_SECRET),
   });
