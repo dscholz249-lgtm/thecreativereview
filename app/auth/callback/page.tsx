@@ -1,9 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { finishMagicLinkAction, exchangePkceCodeAction } from "./actions";
 
 // Handles BOTH Supabase auth flows returned by /auth/v1/verify:
 //
@@ -13,17 +12,17 @@ import { createClient } from "@/lib/supabase/client";
 //     the server, so this must be a client page, not a route handler.
 //
 //   * PKCE flow      — tokens arrive via `?code=...` in the query. The
-//     client SDK's exchangeCodeForSession finishes the flow.
+//     server's exchangeCodeForSession finishes the flow.
 //
-// After the session is set, navigates to "/" which does role-based routing
-// (reviewer → /review/my-reviews, admin → /dashboard).
+// The session is set via Server Actions so the Supabase auth cookies are
+// written with Next's cookie API (Set-Cookie headers on the action
+// response) — guaranteed to be present on the very next navigation. After
+// success, we force a full-page load so the landing `/` render starts from
+// a clean cookie state, then role-routes the user.
 export default function AuthCallbackPage() {
-  const router = useRouter();
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const supabase = createClient();
-
     async function handle() {
       const hashParams = new URLSearchParams(
         window.location.hash.startsWith("#")
@@ -32,10 +31,13 @@ export default function AuthCallbackPage() {
       );
       const queryParams = new URLSearchParams(window.location.search);
 
-      const hashError = hashParams.get("error_description") ?? hashParams.get("error");
-      const queryError = queryParams.get("error_description") ?? queryParams.get("error");
-      if (hashError || queryError) {
-        setError(hashError ?? queryError ?? "Unknown auth error.");
+      const authError =
+        hashParams.get("error_description") ??
+        hashParams.get("error") ??
+        queryParams.get("error_description") ??
+        queryParams.get("error");
+      if (authError) {
+        setError(authError);
         return;
       }
 
@@ -43,29 +45,27 @@ export default function AuthCallbackPage() {
       const refresh_token = hashParams.get("refresh_token");
 
       if (access_token && refresh_token) {
-        const { error } = await supabase.auth.setSession({
-          access_token,
-          refresh_token,
-        });
-        if (error) {
-          setError(error.message);
+        const result = await finishMagicLinkAction(access_token, refresh_token);
+        if (result.ok === false) {
+          setError(result.error);
           return;
         }
-        // history.replaceState clears the hash so the tokens aren't in the
-        // Referer when we navigate away.
+        // history.replaceState wipes the hash so the tokens don't land in
+        // the Referer of the next request. assign() then forces a full
+        // reload so the role-aware redirect on `/` sees the fresh cookies.
         window.history.replaceState(null, "", "/auth/callback");
-        router.replace("/");
+        window.location.assign("/");
         return;
       }
 
       const code = queryParams.get("code");
       if (code) {
-        const { error } = await supabase.auth.exchangeCodeForSession(code);
-        if (error) {
-          setError(error.message);
+        const result = await exchangePkceCodeAction(code);
+        if (result.ok === false) {
+          setError(result.error);
           return;
         }
-        router.replace("/");
+        window.location.assign("/");
         return;
       }
 
@@ -75,7 +75,7 @@ export default function AuthCallbackPage() {
     }
 
     handle();
-  }, [router]);
+  }, []);
 
   return (
     <main className="flex min-h-screen items-center justify-center p-8">
