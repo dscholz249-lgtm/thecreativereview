@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/server";
@@ -40,10 +41,13 @@ type Annotation = {
 
 export default async function AssetDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ v?: string }>;
 }) {
   const { id } = await params;
+  const { v } = await searchParams;
   const supabase = await createClient();
 
   const { data: asset } = await supabase
@@ -62,26 +66,35 @@ export default async function AssetDetailPage({
     .order("version_number", { ascending: false });
   const versions = (versionsData ?? []) as Version[];
 
-  const currentVersion =
-    versions.find((v) => v.id === asset.current_version_id) ?? versions[0] ?? null;
+  // Resolve which version the page is viewing. Explicit ?v=N takes
+  // priority; otherwise show the asset's current version.
+  const requestedVersionNumber = v ? Number.parseInt(v, 10) : NaN;
+  const viewedVersion =
+    (Number.isFinite(requestedVersionNumber)
+      ? versions.find((ver) => ver.version_number === requestedVersionNumber)
+      : undefined) ??
+    versions.find((ver) => ver.id === asset.current_version_id) ??
+    versions[0] ??
+    null;
+  const isViewingCurrent = viewedVersion?.id === asset.current_version_id;
 
-  // Activity for the current version — decisions + annotations. Display
-  // numbers on annotations are derived from creation order, per PRD 7.9.
-  const [{ data: decisionsData }, { data: annotationsData }] = currentVersion
+  // Decisions + annotations for the VIEWED version. Admins may hop between
+  // versions to read the history of feedback without mutating anything.
+  const [{ data: decisionsData }, { data: annotationsData }] = viewedVersion
     ? await Promise.all([
         supabase
           .from("decisions")
           .select(
             "id, verdict, feedback_text, created_at, reviewer_id, client_reviewers(email, name)",
           )
-          .eq("asset_version_id", currentVersion.id)
+          .eq("asset_version_id", viewedVersion.id)
           .order("created_at", { ascending: true }),
         supabase
           .from("annotations")
           .select(
             "id, x_pct, y_pct, comment_text, created_at, reviewer_id, client_reviewers(email, name)",
           )
-          .eq("asset_version_id", currentVersion.id)
+          .eq("asset_version_id", viewedVersion.id)
           .order("created_at", { ascending: true }),
       ])
     : [{ data: [] as Decision[] }, { data: [] as Annotation[] }];
@@ -90,11 +103,10 @@ export default async function AssetDetailPage({
   const annotations = (annotationsData ?? []) as Annotation[];
   const numberedAnnotations = annotations.map((a, i) => ({ ...a, number: i + 1 }));
 
-  // Signed URL for the current version's preview (if stored). 5-minute TTL.
-  const previewSignedUrl = currentVersion?.storage_path
-    ? await createSignedUrl(supabase, currentVersion.storage_path)
+  const previewSignedUrl = viewedVersion?.storage_path
+    ? await createSignedUrl(supabase, viewedVersion.storage_path)
     : null;
-  const previewUrl = previewSignedUrl ?? currentVersion?.external_url ?? null;
+  const previewUrl = previewSignedUrl ?? viewedVersion?.external_url ?? null;
 
   const project = asset.projects as {
     id: string;
@@ -103,7 +115,8 @@ export default async function AssetDetailPage({
     clients: { id: string; name: string } | null;
   } | null;
   const client = project?.clients ?? null;
-  const imageRenderable = isRenderableImage(asset.type, currentVersion);
+  const imageRenderable = isRenderableImage(asset.type, viewedVersion);
+  const basePath = `/assets/${asset.id}`;
 
   return (
     <>
@@ -122,6 +135,21 @@ export default async function AssetDetailPage({
           </>
         }
       />
+
+      {!isViewingCurrent && viewedVersion ? (
+        <div className="mb-4 flex items-center justify-between rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+          <span>
+            Viewing v{viewedVersion.version_number} (read-only). The current
+            version is different.
+          </span>
+          <Link
+            href={basePath}
+            className="font-medium text-amber-900 underline"
+          >
+            Back to current
+          </Link>
+        </div>
+      ) : null}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
         <div className="space-y-6">
@@ -172,33 +200,45 @@ export default async function AssetDetailPage({
               Versions
             </h2>
             <div className="grid gap-3 sm:grid-cols-2">
-              {versions.map((v) => (
-                <Card
-                  key={v.id}
-                  className={
-                    v.id === asset.current_version_id
-                      ? "border-blue-600 bg-blue-50"
-                      : ""
-                  }
-                >
-                  <CardContent className="py-3">
-                    <p className="text-sm font-medium">
-                      v{v.version_number}
-                      {v.id === asset.current_version_id ? " · current" : ""}
-                    </p>
-                    <p className="text-xs text-neutral-600">
-                      {new Date(v.uploaded_at).toLocaleDateString()}
-                      {" · "}
-                      {v.storage_path ? "file" : "external link"}
-                    </p>
-                    {v.upload_note ? (
-                      <p className="mt-2 text-xs italic text-neutral-700 line-clamp-2">
-                        “{v.upload_note}”
-                      </p>
-                    ) : null}
-                  </CardContent>
-                </Card>
-              ))}
+              {versions.map((ver) => {
+                const isCurrent = ver.id === asset.current_version_id;
+                const isViewed = ver.id === viewedVersion?.id;
+                const href = isCurrent
+                  ? basePath
+                  : `${basePath}?v=${ver.version_number}`;
+                return (
+                  <Link
+                    key={ver.id}
+                    href={href}
+                    aria-current={isViewed ? "page" : undefined}
+                  >
+                    <Card
+                      className={
+                        isViewed
+                          ? "border-blue-600 bg-blue-50"
+                          : "transition-colors hover:border-neutral-400"
+                      }
+                    >
+                      <CardContent className="py-3">
+                        <p className="text-sm font-medium">
+                          v{ver.version_number}
+                          {isCurrent ? " · current" : ""}
+                        </p>
+                        <p className="text-xs text-neutral-600">
+                          {new Date(ver.uploaded_at).toLocaleDateString()}
+                          {" · "}
+                          {ver.storage_path ? "file" : "external link"}
+                        </p>
+                        {ver.upload_note ? (
+                          <p className="mt-2 text-xs italic text-neutral-700 line-clamp-2">
+                            “{ver.upload_note}”
+                          </p>
+                        ) : null}
+                      </CardContent>
+                    </Card>
+                  </Link>
+                );
+              })}
             </div>
           </div>
         </div>
@@ -213,14 +253,14 @@ export default async function AssetDetailPage({
             ) : null}
           </div>
 
-          {currentVersion?.upload_note ? (
+          {viewedVersion?.upload_note ? (
             <Card>
               <CardContent className="py-3">
                 <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
                   Note from uploader
                 </p>
                 <p className="mt-2 text-sm text-neutral-800">
-                  {currentVersion.upload_note}
+                  {viewedVersion.upload_note}
                 </p>
               </CardContent>
             </Card>
@@ -228,12 +268,14 @@ export default async function AssetDetailPage({
 
           <div>
             <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-neutral-500">
-              Review activity
+              Review activity {viewedVersion ? `· v${viewedVersion.version_number}` : ""}
             </h2>
             {decisions.length === 0 && numberedAnnotations.length === 0 ? (
               <Card>
                 <CardContent className="py-8 text-center text-sm text-neutral-500">
-                  No activity yet. Once reviewers decide, their feedback shows here.
+                  {isViewingCurrent
+                    ? "No activity yet. Once reviewers decide, their feedback shows here."
+                    : "No activity recorded on this version."}
                 </CardContent>
               </Card>
             ) : (
@@ -242,14 +284,14 @@ export default async function AssetDetailPage({
                   <DecisionCard
                     key={d.id}
                     decision={d}
-                    versionNumber={currentVersion?.version_number ?? null}
+                    versionNumber={viewedVersion?.version_number ?? null}
                   />
                 ))}
                 {numberedAnnotations.map((a) => (
                   <AnnotationCard
                     key={a.id}
                     annotation={a}
-                    versionNumber={currentVersion?.version_number ?? null}
+                    versionNumber={viewedVersion?.version_number ?? null}
                   />
                 ))}
               </div>
