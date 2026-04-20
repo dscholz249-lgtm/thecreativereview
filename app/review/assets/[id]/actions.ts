@@ -12,6 +12,7 @@ import {
   notifyDecisionSubmitted,
   notifyProjectCompletedIfNeeded,
 } from "@/lib/notifications";
+import { track } from "@/lib/analytics";
 
 export type ActionResult =
   | { ok: true }
@@ -118,6 +119,25 @@ export async function rejectDecisionAction(
   });
 
   if (error) return { ok: false, error: error.message };
+
+  // Fine-grained analytics for the reject path so we can distinguish
+  // "pins only" from "text only" from "both" without reading DB state.
+  if (parsed.data.annotations.length > 0) {
+    track("annotation_created", {
+      properties: {
+        asset_version_id: parsed.data.asset_version_id,
+        count: parsed.data.annotations.length,
+      },
+    });
+  }
+  if (parsed.data.feedback_text) {
+    track("feedback_submitted", {
+      properties: {
+        asset_version_id: parsed.data.asset_version_id,
+        length: parsed.data.feedback_text.length,
+      },
+    });
+  }
 
   await fireDecisionNotifications(
     supabase,

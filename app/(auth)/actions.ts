@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/server/admin-client";
+import { track } from "@/lib/analytics";
 
 const SignupInput = z.object({
   email: z.string().email(),
@@ -65,6 +66,12 @@ export async function signup(
     await admin.from("workspaces").delete().eq("id", workspace.id);
     return { ok: false, error: profileError.message };
   }
+
+  track("signup", {
+    user_id: data.user.id,
+    workspace_id: workspace.id,
+    properties: { confirmed: Boolean(data.session) },
+  });
 
   if (data.session) {
     revalidatePath("/", "layout");

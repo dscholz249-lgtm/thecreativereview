@@ -175,7 +175,37 @@ async function sendDigest(
     sent_at: ok ? new Date().toISOString() : null,
   });
 
+  if (ok) {
+    // Worker runs outside the Next.js app — can't import the track() helper
+    // without dragging the whole lib/env.server chain. Post directly to
+    // Amplitude HTTP v2. No-op when AMPLITUDE_API_KEY is unset.
+    await postAmplitudeEvent("digest_sent", reviewer.email, {
+      item_count: items.length,
+    });
+  }
+
   return ok;
+}
+
+async function postAmplitudeEvent(
+  event: string,
+  userId: string,
+  properties: Record<string, string | number | boolean | null>,
+): Promise<void> {
+  const apiKey = process.env.AMPLITUDE_API_KEY;
+  if (!apiKey) return;
+  try {
+    await fetch("https://api2.amplitude.com/2/httpapi", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        api_key: apiKey,
+        events: [{ event_type: event, user_id: userId, event_properties: properties }],
+      }),
+    });
+  } catch (err) {
+    console.warn("[digest] amplitude post failed", err);
+  }
 }
 
 function isFridayNoonLocal(now: Date, timezone: string | null): boolean {
