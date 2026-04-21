@@ -22,9 +22,9 @@ const PAID_PLANS: Array<{ id: PaidPlan; tagline: string }> = [
 export default async function BillingPage({
   searchParams,
 }: {
-  searchParams: Promise<{ checkout?: string }>;
+  searchParams: Promise<{ checkout?: string; plan?: string; changed?: string }>;
 }) {
-  const { checkout } = await searchParams;
+  const { checkout, plan: changedTo, changed } = await searchParams;
   const supabase = await createClient();
 
   const {
@@ -68,6 +68,14 @@ export default async function BillingPage({
         <Card className="mb-6 border-amber-200 bg-amber-50">
           <CardContent className="py-4 text-sm text-amber-900">
             Checkout was cancelled. Your plan is unchanged.
+          </CardContent>
+        </Card>
+      ) : null}
+      {changed === "1" && changedTo ? (
+        <Card className="mb-6 border-emerald-200 bg-emerald-50">
+          <CardContent className="py-4 text-sm text-emerald-900">
+            Plan updated to {PLAN_LABELS[changedTo as WorkspacePlan] ?? changedTo}.
+            Stripe will prorate the difference on your next invoice.
           </CardContent>
         </Card>
       ) : null}
