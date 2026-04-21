@@ -45,27 +45,27 @@ Run against the live Railway deploy after main is green.
 
 ## 5. Stripe — initial subscription (Solo)
 
-- [ ] Sign int as a new admin (workspace should show plan `Self-hosted`)
-- [ ] Navigate via workspace dropdown → **Billing**
-- [ ] Click **Subscribe to Solo**
-- [ ] Checkout opens in Stripe-hosted page; use test card `4242 4242 4242 4242`, any future expiry, any CVC, any ZIP
-- [ ] Return URL lands on `/billing?checkout=success` with a green banner
-- [ ] Within a few seconds (webhook latency), the **Current plan** card flips to `Solo / paid`
-- [ ] Supabase: `workspaces.plan = 'solo'`, `stripe_customer_id` and `stripe_subscription_id` both populated
+- [x] Sign int as a new admin (workspace should show plan `Self-hosted`)
+- [x] Navigate via workspace dropdown → **Billing**
+- [x] Click **Subscribe to Solo**
+- [x] Checkout opens in Stripe-hosted page; use test card `4242 4242 4242 4242`, any future expiry, any CVC, any ZIP
+- [x] Return URL lands on `/billing?checkout=success` with a green banner
+- [x] Within a few seconds (webhook latency), the **Current plan** card flips to `Solo / paid`
+- [x] Supabase: `workspaces.plan = 'solo'`, `stripe_customer_id` and `stripe_subscription_id` both populated
 
 ## 6. Stripe — plan change (Solo → Studio) via webhook
 
-- [ ] From billing page, click **Manage in Stripe** → Portal opens
-- [ ] In Portal: Update plan → Studio → confirm
-- [ ] Back on `/billing`, within a few seconds the Current plan shows `Studio / paid`
-- [ ] Supabase: `workspaces.plan = 'studio'` (same row, no new workspace created)
-- [ ] **Alt path (no UI involved)**: trigger `stripe trigger customer.subscription.updated --override ...` from the Stripe CLI with the `stripe_subscription_id` of the test workspace and a new `price_id` → plan flips
+- [x] From billing page, click **Manage in Stripe** → Portal opens
+- [x] In Portal: Update plan → Studio → confirm
+- [x] Back on `/billing`, within a few seconds the Current plan shows `Studio / paid`
+- [x] Supabase: `workspaces.plan = 'studio'` (same row, no new workspace created)
+- [x] **Alt path (no UI involved)**: trigger `stripe trigger customer.subscription.updated --override ...` from the Stripe CLI with the `stripe_subscription_id` of the test workspace and a new `price_id` → plan flips
 
 ## 7. Stripe — cancellation
 
-- [ ] In Stripe Portal, cancel the subscription (immediate, not end-of-period)
-- [ ] Webhook `customer.subscription.deleted` fires
-- [ ] Supabase: `workspaces.plan = 'oss'`, `stripe_subscription_id = null`, `stripe_customer_id` retained (so next subscribe reuses it)
+- [x] In Stripe Portal, cancel the subscription (immediate, not end-of-period)
+- [x] Webhook `customer.subscription.deleted` fires
+- [x] Supabase: `workspaces.plan = 'oss'`, `stripe_subscription_id = null`, `stripe_customer_id` retained (so next subscribe reuses it)
 
 ## 8. Weekly digest cron worker
 
