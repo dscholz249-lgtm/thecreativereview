@@ -4,48 +4,48 @@ Run against the live Railway deploy after main is green.
 
 ## Prereqs (one-time, before running the checks below)
 
-- [ ] `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` set on the Railway web service
+- [x] `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` set on the Railway web service
 - [ ] `AMPLITUDE_API_KEY` set on the Railway web service AND the cron service
-- [ ] `RESEND_API_KEY` + `EMAIL_FROM` set (EMAIL_FROM must be on a domain verified in Resend or left unset to use Resend's sandbox sender)
-- [ ] Supabase migration `20260420120000_milestone4_billing.sql` applied (check `workspaces.stripe_customer_id` exists)
-- [ ] Stripe webhook endpoint configured in Stripe Dashboard → Developers → Webhooks, pointing at `https://<prod-host>/api/stripe/webhook`, listening to: `checkout.session.completed`, `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`
-- [ ] Stripe Price IDs in `lib/stripe/config.ts` match the live Stripe dashboard (they were generated in test mode — regenerate in live mode before GA)
-- [ ] Railway cron service for the digest worker: image `Dockerfile.worker`, schedule `0 * * * *`, start command `npm run worker:digest`
+- [x] `RESEND_API_KEY` + `EMAIL_FROM` set (EMAIL_FROM must be on a domain verified in Resend or left unset to use Resend's sandbox sender)
+- [x] Supabase migration `20260420120000_milestone4_billing.sql` applied (check `workspaces.stripe_customer_id` exists)
+- [x] Stripe webhook endpoint configured in Stripe Dashboard → Developers → Webhooks, pointing at `https://<prod-host>/api/stripe/webhook`, listening to: `checkout.session.completed`, `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`
+- [x] Stripe Price IDs resolve correctly. Defaults in `lib/stripe/config.ts` are **test mode**. For live mode, set `STRIPE_PRICE_SOLO`, `STRIPE_PRICE_STUDIO`, `STRIPE_PRICE_AGENCY` on Railway (and point `STRIPE_SECRET_KEY` at `sk_live_...`). No code change needed to switch modes.
+- [x] Railway cron service for the digest worker: image `Dockerfile.worker`, schedule `0 * * * *`, start command `npm run worker:digest`
 
 ## 1. Notifications — new asset upload → reviewer email
 
-- [ ] Sign in as an admin with at least one client that has one reviewer invited
-- [ ] Upload a new PNG asset to a project in that client
-- [ ] Within ~60s, the reviewer's inbox receives a "New in {Project}: {Asset} is ready for review" email
-- [ ] The upload note (if one was entered) appears in the email as a blockquote
-- [ ] "Review now" button in the email opens `/review/assets/{id}` and the reviewer can sign in
-- [ ] Upload a **v2** of the same asset → a second email arrives (no dedup suppression)
+- [x] Sign in as an admin with at least one client that has one reviewer invited
+- [x] Upload a new PNG asset to a project in that client
+- [x] Within ~60s, the reviewer's inbox receives a "New in {Project}: {Asset} is ready for review" email
+- [x] The upload note (if one was entered) appears in the email as a blockquote
+- [x] "Review now" button in the email opens `/review/assets/{id}` and the reviewer can sign in
+- [x] Upload a **v2** of the same asset → a second email arrives (no dedup suppression)
 
 ## 2. Notifications — decision submitted → admin email
 
-- [ ] As a reviewer, **approve** an asset from the initial-review state
-- [ ] Admin receives "{Reviewer} approved {Asset}" email immediately
-- [ ] As a reviewer, open a different image and choose **Request changes** → add 2+ pins + text feedback → Submit
-- [ ] Admin receives "{Reviewer} requested changes on {Asset}" email, with pin count + feedback body rendered
-- [ ] Reject on a PDF / non-image: textarea-only submission also triggers the admin email
+- [x] As a reviewer, **approve** an asset from the initial-review state
+- [x] Admin receives "{Reviewer} approved {Asset}" email immediately
+- [x] As a reviewer, open a different image and choose **Request changes** → add 2+ pins + text feedback → Submit
+- [x] Admin receives "{Reviewer} requested changes on {Asset}" email, with pin count + feedback body rendered
+- [x] Reject on a PDF / non-image: textarea-only submission also triggers the admin email
 
 ## 3. Notifications — project completed → admin email
 
-- [ ] In a project with exactly one non-archived pending asset, approve that asset as a reviewer
-- [ ] Admin receives "{Project} is complete" email with the correct approved-count
-- [ ] Re-approving (or re-deciding via different version) does NOT send a duplicate project-completed email (idempotency via `notifications.kind='project_completed'` check)
+- [x] In a project with exactly one non-archived pending asset, approve that asset as a reviewer
+- [x] Admin receives "{Project} is complete" email with the correct approved-count
+- [x] Re-approving (or re-deciding via different version) does NOT send a duplicate project-completed email (idempotency via `notifications.kind='project_completed'` check)
 
 ## 4. Manual reminder — DB-level 24h rate limit
 
-- [ ] On a project detail page with pending assets, click **Nudge reviewers**
-- [ ] Button goes disabled + "Reminder on cooldown" appears; all reviewers receive the `manual-reminder` email listing pending items
-- [ ] Reload the page — button stays disabled (state is pulled from `projects.last_reminded_at`)
-- [ ] **Attempt the bypass**: in DevTools, re-enable the disabled button and click Send. The action must return "This project was reminded within the last 24 hours." — this verifies the enforcement is in the DB, not the UI.
-- [ ] In Supabase SQL editor: `update projects set last_reminded_at = now() - interval '25 hours' where id = '<uuid>';` → button re-enables + send succeeds.
+- [x] On a project detail page with pending assets, click **Nudge reviewers**
+- [x] Button goes disabled + "Reminder on cooldown" appears; all reviewers receive the `manual-reminder` email listing pending items
+- [x] Reload the page — button stays disabled (state is pulled from `projects.last_reminded_at`)
+- [x] **Attempt the bypass**: in DevTools, re-enable the disabled button and click Send. The action must return "This project was reminded within the last 24 hours." — this verifies the enforcement is in the DB, not the UI.
+- [x] In Supabase SQL editor: `update projects set last_reminded_at = now() - interval '25 hours' where id = '97f01f4a-4159-44fd-9e37-deb9423b8af1';` → button re-enables + send succeeds.
 
 ## 5. Stripe — initial subscription (Solo)
 
-- [ ] Sign in as a new admin (workspace should show plan `Self-hosted`)
+- [ ] Sign int as a new admin (workspace should show plan `Self-hosted`)
 - [ ] Navigate via workspace dropdown → **Billing**
 - [ ] Click **Subscribe to Solo**
 - [ ] Checkout opens in Stripe-hosted page; use test card `4242 4242 4242 4242`, any future expiry, any CVC, any ZIP
