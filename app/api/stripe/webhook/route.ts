@@ -17,6 +17,10 @@ import type { WorkspacePlan } from "@/lib/database.types";
 // Node runtime: Stripe's SDK depends on Node crypto via the `req.text()` body.
 // Edge would require the Web-crypto variant of constructEvent and streamed
 // buffers. We don't need it for this volume.
+//
+// Every code path logs a [stripe-webhook] line so silent drops surface in
+// Railway logs. "I got a 200 from Stripe but my plan didn't update" was a
+// real failure mode — early-returns weren't observable.
 
 export const runtime = "nodejs";
 
@@ -41,6 +45,8 @@ export async function POST(req: NextRequest): Promise<Response> {
     return new NextResponse("invalid signature", { status: 400 });
   }
 
+  console.log(`[stripe-webhook] received ${event.type} id=${event.id}`);
+
   try {
     switch (event.type) {
       case "checkout.session.completed":
@@ -54,7 +60,7 @@ export async function POST(req: NextRequest): Promise<Response> {
         await handleSubscriptionDeleted(event.data.object);
         break;
       default:
-        // Ignore uninteresting events — no-op so Stripe marks as delivered.
+        console.log(`[stripe-webhook] ignored ${event.type}`);
         break;
     }
   } catch (err) {
@@ -76,7 +82,12 @@ async function handleCheckoutCompleted(
   // code path (e.g. via Stripe CLI in testing).
   const workspaceId =
     session.client_reference_id ?? session.metadata?.workspace_id ?? null;
-  if (!workspaceId) return;
+  if (!workspaceId) {
+    console.warn(
+      `[stripe-webhook] checkout.completed missing workspace_id (session=${session.id})`,
+    );
+    return;
+  }
 
   const subscriptionId =
     typeof session.subscription === "string"
@@ -87,17 +98,29 @@ async function handleCheckoutCompleted(
       ? session.customer
       : session.customer?.id ?? null;
 
-  if (!subscriptionId || !customerId) return;
+  if (!subscriptionId || !customerId) {
+    console.warn(
+      `[stripe-webhook] checkout.completed missing subscription or customer (session=${session.id}, sub=${subscriptionId}, cust=${customerId})`,
+    );
+    return;
+  }
 
   const subscription = await stripe().subscriptions.retrieve(subscriptionId);
   const plan = planFromSubscription(subscription);
-  if (!plan) return;
+  if (!plan) {
+    const priceId = subscription.items.data[0]?.price?.id ?? "<none>";
+    console.warn(
+      `[stripe-webhook] checkout.completed unknown price_id=${priceId} (sub=${subscriptionId}). Check STRIPE_PRICE_* env vars match the live/test mode you're in.`,
+    );
+    return;
+  }
 
   await updateWorkspacePlan({
     workspaceId,
     plan,
     stripeCustomerId: customerId,
     stripeSubscriptionId: subscriptionId,
+    trigger: "checkout.session.completed",
   });
 }
 
@@ -105,10 +128,21 @@ async function handleSubscriptionUpsert(
   subscription: Stripe.Subscription,
 ): Promise<void> {
   const workspaceId = await resolveWorkspaceId(subscription);
-  if (!workspaceId) return;
+  if (!workspaceId) {
+    console.warn(
+      `[stripe-webhook] subscription.upsert could not resolve workspace_id (sub=${subscription.id})`,
+    );
+    return;
+  }
 
   const plan = planFromSubscription(subscription);
-  if (!plan) return;
+  if (!plan) {
+    const priceId = subscription.items.data[0]?.price?.id ?? "<none>";
+    console.warn(
+      `[stripe-webhook] subscription.upsert unknown price_id=${priceId} (sub=${subscription.id})`,
+    );
+    return;
+  }
 
   const customerId =
     typeof subscription.customer === "string"
@@ -120,6 +154,7 @@ async function handleSubscriptionUpsert(
     plan,
     stripeCustomerId: customerId,
     stripeSubscriptionId: subscription.id,
+    trigger: "subscription.upsert",
   });
 }
 
@@ -127,13 +162,28 @@ async function handleSubscriptionDeleted(
   subscription: Stripe.Subscription,
 ): Promise<void> {
   const workspaceId = await resolveWorkspaceId(subscription);
-  if (!workspaceId) return;
+  if (!workspaceId) {
+    console.warn(
+      `[stripe-webhook] subscription.deleted could not resolve workspace_id (sub=${subscription.id})`,
+    );
+    return;
+  }
 
   const admin = createAdminClient();
-  await admin
+  const { error } = await admin
     .from("workspaces")
     .update({ plan: "oss", stripe_subscription_id: null })
     .eq("id", workspaceId);
+  if (error) {
+    console.error(
+      `[stripe-webhook] subscription.deleted failed to downgrade workspace ${workspaceId}`,
+      error,
+    );
+    return;
+  }
+  console.log(
+    `[stripe-webhook] subscription.deleted downgraded workspace=${workspaceId} → oss`,
+  );
 }
 
 // Resolve workspace_id by trying subscription metadata first (set on checkout
@@ -147,22 +197,28 @@ async function resolveWorkspaceId(
   if (fromMetadata) return fromMetadata;
 
   const admin = createAdminClient();
-  const { data: bySubscription } = await admin
+  const { data: bySubscription, error: subErr } = await admin
     .from("workspaces")
     .select("id")
     .eq("stripe_subscription_id", subscription.id)
     .maybeSingle();
+  if (subErr) {
+    console.error("[stripe-webhook] workspace lookup by subscription failed", subErr);
+  }
   if (bySubscription) return bySubscription.id;
 
   const customerId =
     typeof subscription.customer === "string"
       ? subscription.customer
       : subscription.customer.id;
-  const { data: byCustomer } = await admin
+  const { data: byCustomer, error: custErr } = await admin
     .from("workspaces")
     .select("id")
     .eq("stripe_customer_id", customerId)
     .maybeSingle();
+  if (custErr) {
+    console.error("[stripe-webhook] workspace lookup by customer failed", custErr);
+  }
   return byCustomer?.id ?? null;
 }
 
@@ -171,9 +227,10 @@ async function updateWorkspacePlan(params: {
   plan: WorkspacePlan;
   stripeCustomerId: string;
   stripeSubscriptionId: string;
+  trigger: string;
 }): Promise<void> {
   const admin = createAdminClient();
-  await admin
+  const { error } = await admin
     .from("workspaces")
     .update({
       plan: params.plan,
@@ -181,4 +238,14 @@ async function updateWorkspacePlan(params: {
       stripe_subscription_id: params.stripeSubscriptionId,
     })
     .eq("id", params.workspaceId);
+  if (error) {
+    console.error(
+      `[stripe-webhook] ${params.trigger} failed to update workspace=${params.workspaceId}`,
+      error,
+    );
+    return;
+  }
+  console.log(
+    `[stripe-webhook] ${params.trigger} updated workspace=${params.workspaceId} → plan=${params.plan}`,
+  );
 }
