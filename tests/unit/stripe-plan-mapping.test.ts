@@ -1,17 +1,21 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, afterEach, vi } from "vitest";
 import {
-  PLAN_PRICES,
+  getPlanPrices,
   PLAN_LABELS,
   planFromPriceId,
   planFromSubscription,
 } from "@/lib/stripe/config";
 
 describe("stripe plan mapping", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
   it("round-trips every paid plan through planFromPriceId", () => {
+    const prices = getPlanPrices();
     for (const plan of ["solo", "studio", "agency"] as const) {
-      const priceId = PLAN_PRICES[plan];
-      expect(priceId).toMatch(/^price_/);
-      expect(planFromPriceId(priceId)).toBe(plan);
+      expect(prices[plan]).toMatch(/^price_/);
+      expect(planFromPriceId(prices[plan])).toBe(plan);
     }
   });
 
@@ -26,6 +30,21 @@ describe("stripe plan mapping", () => {
     expect(PLAN_LABELS.studio).toBeTruthy();
     expect(PLAN_LABELS.agency).toBeTruthy();
   });
+
+  it("env var overrides beat committed defaults", () => {
+    // Launch-day behaviour: production sets STRIPE_PRICE_* on Railway to the
+    // live-mode IDs, code keeps test-mode defaults. This guards against a
+    // future refactor accidentally hard-wiring the defaults.
+    vi.stubEnv("STRIPE_PRICE_SOLO", "price_live_solo_override");
+    expect(getPlanPrices().solo).toBe("price_live_solo_override");
+    expect(planFromPriceId("price_live_solo_override")).toBe("solo");
+  });
+
+  it("falls back to defaults when env var is empty string", () => {
+    vi.stubEnv("STRIPE_PRICE_STUDIO", "");
+    expect(getPlanPrices().studio).toMatch(/^price_/);
+    expect(getPlanPrices().studio).not.toBe("");
+  });
 });
 
 describe("planFromSubscription", () => {
@@ -35,7 +54,7 @@ describe("planFromSubscription", () => {
     // in the integration suite). Here we verify the pure plan resolution so
     // both legs of that test have unit coverage.
     const studioSub = {
-      items: { data: [{ price: { id: PLAN_PRICES.studio } }] },
+      items: { data: [{ price: { id: getPlanPrices().studio } }] },
     };
     expect(planFromSubscription(studioSub)).toBe("studio");
   });

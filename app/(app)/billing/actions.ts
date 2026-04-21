@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { stripe } from "@/server/stripe";
-import { PLAN_PRICES } from "@/lib/stripe/config";
+import { getPlanPrices } from "@/lib/stripe/config";
 import { env } from "@/lib/env";
 
 const PaidPlanSchema = z.enum(["solo", "studio", "agency"]);
@@ -49,7 +49,7 @@ export async function createCheckoutSessionAction(
 
   const session = await stripe().checkout.sessions.create({
     mode: "subscription",
-    line_items: [{ price: PLAN_PRICES[plan], quantity: 1 }],
+    line_items: [{ price: getPlanPrices()[plan], quantity: 1 }],
     customer_email: workspace.stripe_customer_id ? undefined : user.email,
     customer: workspace.stripe_customer_id ?? undefined,
     client_reference_id: workspace.id,
