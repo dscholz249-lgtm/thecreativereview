@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { CreativeReviewLogo } from "@/components/creative-review-logo";
 
 // Split-panel shell for /login and /signup. Left panel is the marketing
 // pitch, right panel is the form (passed as `children`). Top bar holds
@@ -24,15 +25,9 @@ export function AuthSplitShell({
         className="bg-[var(--cr-card)]"
         style={{ borderBottom: "2px solid var(--cr-ink)" }}
       >
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4 sm:px-10">
-          <Link href="/" className="flex items-center gap-2.5">
-            <span className="cr-logo-mark">CR</span>
-            <span
-              className="text-[20px] font-extrabold tracking-tight"
-              style={{ fontFamily: "var(--font-display), serif" }}
-            >
-              Creative Review
-            </span>
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3 sm:px-10">
+          <Link href="/" aria-label="The Creative Review — home">
+            <CreativeReviewLogo fontSize={16} withEyebrow={false} />
           </Link>
         </div>
       </header>

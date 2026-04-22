@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { CreativeReviewLogo } from "@/components/creative-review-logo";
 
 export function LandingFooter() {
   return (
@@ -8,17 +9,9 @@ export function LandingFooter() {
     >
       <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-7 px-6 py-10 sm:flex-row sm:items-center sm:px-10">
         <div>
-          <div className="flex items-center gap-2.5">
-            <span className="cr-logo-mark">CR</span>
-            <span
-              className="text-[16px] font-extrabold tracking-tight"
-              style={{ fontFamily: "var(--font-display), serif" }}
-            >
-              Creative Review
-            </span>
-          </div>
+          <CreativeReviewLogo fontSize={14} />
           <p
-            className="mt-2 text-[13px]"
+            className="mt-4 text-[13px]"
             style={{ color: "var(--cr-muted)" }}
           >
             A focused approval tool for freelancers and small teams.

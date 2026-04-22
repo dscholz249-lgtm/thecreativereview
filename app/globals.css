@@ -346,18 +346,5 @@
 }
 .cr-badge-changes .cr-badge-dot { background: var(--cr-destructive-ink); }
 
-/* Logo mark — black square with green hard offset shadow. */
-.cr-logo-mark {
-  width: 24px;
-  height: 24px;
-  border-radius: 6px;
-  background: var(--cr-ink);
-  color: var(--cr-card);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--font-display), serif;
-  font-weight: 800;
-  font-size: 14px;
-  box-shadow: 2px 2px 0 var(--cr-accent-green);
-}
+/* Logo mark — the old `.cr-logo-mark` black-square badge was retired when
+   the filmstrip-check ticket shipped. Use <CreativeReviewLogo /> instead. */

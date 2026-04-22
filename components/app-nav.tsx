@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Chevron } from "@/components/cr-icons";
+import { CreativeReviewLogo } from "@/components/creative-review-logo";
 import { logout } from "@/app/(auth)/actions";
 
 type NavProps = {
@@ -33,16 +34,10 @@ export function AppNav({ workspaceName, userEmail }: NavProps) {
       className="sticky top-0 z-20 bg-[var(--cr-card)]"
       style={{ borderBottom: "2px solid var(--cr-ink)" }}
     >
-      <div className="mx-auto flex max-w-[1200px] items-center justify-between px-6 py-4 sm:px-10">
+      <div className="mx-auto flex max-w-[1200px] items-center justify-between px-6 py-3 sm:px-10">
         <div className="flex items-center gap-9">
-          <Link href="/dashboard" className="flex items-center gap-2.5">
-            <span className="cr-logo-mark">CR</span>
-            <span
-              className="text-[20px] font-extrabold tracking-tight"
-              style={{ fontFamily: "var(--font-display), serif" }}
-            >
-              Creative Review
-            </span>
+          <Link href="/dashboard" aria-label="Dashboard">
+            <CreativeReviewLogo fontSize={16} withEyebrow={false} />
           </Link>
           <nav className="flex items-center gap-6">
             {navItems.map((item) => {
