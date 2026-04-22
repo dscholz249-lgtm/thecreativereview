@@ -37,9 +37,11 @@ export default async function AppLayout({
     (profile?.workspaces as { name: string } | null)?.name ?? "Workspace";
 
   return (
-    <div className="flex min-h-screen flex-col bg-neutral-50">
+    <div className="cr-surface flex min-h-screen flex-col">
       <AppNav workspaceName={workspaceName} userEmail={user.email ?? ""} />
-      <main className="mx-auto w-full max-w-6xl flex-1 p-6">{children}</main>
+      <main className="mx-auto w-full max-w-[1200px] flex-1 px-6 py-9 sm:px-10 sm:py-10">
+        {children}
+      </main>
     </div>
   );
 }
