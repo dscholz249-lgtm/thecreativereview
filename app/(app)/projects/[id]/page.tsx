@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createSignedUrl } from "@/lib/supabase/storage";
 import { PageHeading, LinkButton } from "@/components/page-heading";
-import { ArrowRight, Plus } from "@/components/cr-icons";
+import { ArrowRight, File as FileIcon, Plus } from "@/components/cr-icons";
 import { RemindReviewersButton } from "./remind-reviewers-button";
 
 export default async function ProjectDetailPage({
@@ -22,12 +23,36 @@ export default async function ProjectDetailPage({
     .maybeSingle();
   if (!project) notFound();
 
-  const { data: assets } = await supabase
+  const { data: assetsRaw } = await supabase
     .from("assets")
-    .select("id, name, type, status, deadline, archived")
+    .select(
+      "id, name, type, status, deadline, archived, asset_versions!assets_current_version_id_fkey(id, storage_path)",
+    )
     .eq("project_id", id)
     .eq("archived", false)
     .order("created_at", { ascending: false });
+
+  type AssetRow = {
+    id: string;
+    name: string;
+    type: string;
+    status: string;
+    deadline: string | null;
+    archived: boolean;
+    asset_versions: { id: string; storage_path: string | null } | null;
+  };
+  const assets = (assetsRaw ?? []) as unknown as AssetRow[];
+
+  // Signed URLs for the current version's file. Asset detail uses the same
+  // helper; here we skip generation for assets whose current version is an
+  // external URL (Figma etc.) or missing entirely.
+  const thumbUrls = new Map<string, string>();
+  for (const a of assets) {
+    const path = a.asset_versions?.storage_path;
+    if (!path) continue;
+    const url = await createSignedUrl(supabase, path);
+    if (url) thumbUrls.set(a.id, url);
+  }
 
   const client = project.clients as { id: string; name: string } | null;
 
@@ -100,45 +125,76 @@ export default async function ProjectDetailPage({
         </div>
       ) : (
         <div className="flex flex-col gap-3">
-          {assets.map((a) => (
-            <Link
-              key={a.id}
-              href={`/assets/${a.id}`}
-              className="cr-card flex items-center gap-5 p-6 transition-colors hover:border-[var(--cr-line-strong)]"
-            >
-              <div className="min-w-0 flex-1">
+          {assets.map((a) => {
+            const thumb = thumbUrls.get(a.id);
+            const isImage =
+              a.type === "image" || a.type === "design" || a.type === "wireframe";
+            return (
+              <Link
+                key={a.id}
+                href={`/assets/${a.id}`}
+                className="cr-card flex items-center gap-5 p-5 transition-colors hover:border-[var(--cr-line-strong)]"
+              >
                 <div
-                  className="truncate"
+                  className="flex size-[72px] shrink-0 items-center justify-center overflow-hidden"
                   style={{
-                    fontFamily: "var(--font-display), serif",
-                    fontWeight: 700,
-                    fontSize: 20,
-                    letterSpacing: "-0.01em",
+                    background: "var(--cr-paper-2)",
+                    border: "1px dashed var(--cr-line-strong)",
+                    borderRadius: "var(--cr-radius)",
+                    color: "var(--cr-muted)",
                   }}
                 >
-                  {a.name}
+                  {thumb && isImage ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={thumb}
+                      alt=""
+                      className="h-full w-full object-cover"
+                    />
+                  ) : thumb ? (
+                    // PDFs / non-image files with a storage path — show file
+                    // glyph rather than attempt a raster preview.
+                    <FileIcon size={22} />
+                  ) : (
+                    <span className="text-[11px] font-bold uppercase tracking-[0.08em]">
+                      {thumbLabel(a.type)}
+                    </span>
+                  )}
                 </div>
-                <div
-                  className="mt-0.5 text-[13px] font-semibold uppercase tracking-[0.04em]"
-                  style={{ color: "var(--cr-muted)" }}
-                >
-                  {a.type}
+                <div className="min-w-0 flex-1">
+                  <div
+                    className="truncate"
+                    style={{
+                      fontFamily: "var(--font-display), serif",
+                      fontWeight: 700,
+                      fontSize: 20,
+                      letterSpacing: "-0.01em",
+                    }}
+                  >
+                    {a.name}
+                  </div>
+                  <div
+                    className="mt-0.5 text-[13px] font-semibold uppercase tracking-[0.04em]"
+                    style={{ color: "var(--cr-muted)" }}
+                  >
+                    {a.type}
+                  </div>
                 </div>
-              </div>
-              {a.deadline ? (
-                <span
-                  className="text-[14px]"
-                  style={{ color: "var(--cr-muted)" }}
-                >
-                  Due {formatShortDate(a.deadline)}
+                {a.deadline ? (
+                  <span
+                    className="text-[14px]"
+                    style={{ color: "var(--cr-muted)" }}
+                  >
+                    Due {formatShortDate(a.deadline)}
+                  </span>
+                ) : null}
+                <AssetStatusBadge status={a.status} />
+                <span className="cr-btn cr-btn-sm cr-btn-ghost">
+                  Open <ArrowRight size={14} />
                 </span>
-              ) : null}
-              <AssetStatusBadge status={a.status} />
-              <span className="cr-btn cr-btn-sm cr-btn-ghost">
-                Open <ArrowRight size={14} />
-              </span>
-            </Link>
-          ))}
+              </Link>
+            );
+          })}
         </div>
       )}
     </>
@@ -215,4 +271,19 @@ function AssetStatusBadge({ status }: { status: string }) {
 function formatShortDate(iso: string): string {
   const d = new Date(iso);
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+function thumbLabel(type: string): string {
+  switch (type) {
+    case "image":
+      return "IMG";
+    case "document":
+      return "PDF";
+    case "wireframe":
+      return "WIRE";
+    case "design":
+      return "DSN";
+    default:
+      return type.slice(0, 3).toUpperCase();
+  }
 }
