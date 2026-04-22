@@ -26,24 +26,42 @@ export default async function ReviewLayout({
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-neutral-50">
-      <header className="flex items-center justify-between border-b border-neutral-200 bg-white px-6 py-3">
-        <Link href="/review/my-reviews" className="text-sm font-semibold tracking-tight">
-          Creative Review
-        </Link>
-        <div className="flex items-center gap-4 text-sm">
-          <span className="text-neutral-600">Reviewing as {user.email}</span>
-          <form action={logout}>
-            <button
-              type="submit"
-              className="text-neutral-600 underline hover:text-neutral-900"
+    <div className="cr-surface flex min-h-screen flex-col">
+      <header
+        className="bg-[var(--cr-card)]"
+        style={{ borderBottom: "2px solid var(--cr-ink)" }}
+      >
+        <div className="mx-auto flex max-w-[1200px] items-center justify-between px-6 py-4 sm:px-10">
+          <Link
+            href="/review/my-reviews"
+            className="flex items-center gap-2.5"
+          >
+            <span className="cr-logo-mark">CR</span>
+            <span
+              className="text-[20px] font-extrabold tracking-tight"
+              style={{ fontFamily: "var(--font-display), serif" }}
             >
-              Log out
-            </button>
-          </form>
+              Creative Review
+            </span>
+          </Link>
+          <div className="flex items-center gap-4 text-[14px]">
+            <span style={{ color: "var(--cr-muted)" }}>
+              Reviewing as{" "}
+              <span style={{ color: "var(--cr-ink)", fontWeight: 600 }}>
+                {user.email}
+              </span>
+            </span>
+            <form action={logout}>
+              <button type="submit" className="cr-link">
+                Log out
+              </button>
+            </form>
+          </div>
         </div>
       </header>
-      <main className="mx-auto w-full max-w-5xl flex-1 p-6">{children}</main>
+      <main className="mx-auto w-full max-w-[1240px] flex-1 px-6 py-9 sm:px-10 sm:py-10">
+        {children}
+      </main>
     </div>
   );
 }

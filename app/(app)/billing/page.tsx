@@ -1,22 +1,19 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { PageHeading } from "@/components/page-heading";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { PLAN_LABELS } from "@/lib/stripe/config";
 import type { WorkspacePlan } from "@/lib/database.types";
 import {
   createCheckoutSessionAction,
   createPortalSessionAction,
 } from "./actions";
-import { Button } from "@/components/ui/button";
 
 type PaidPlan = Exclude<WorkspacePlan, "oss">;
 
-const PAID_PLANS: Array<{ id: PaidPlan; tagline: string }> = [
-  { id: "solo", tagline: "Solo freelancers — 1 seat, 5 clients." },
-  { id: "studio", tagline: "Small studios — 3 seats, 25 clients." },
-  { id: "agency", tagline: "Agencies — 10 seats, unlimited clients." },
+const PAID_PLANS: Array<{ id: PaidPlan; tagline: string; featured: boolean }> = [
+  { id: "solo", tagline: "Solo freelancers — 1 seat, 5 clients.", featured: false },
+  { id: "studio", tagline: "Small studios — 3 seats, 25 clients.", featured: true },
+  { id: "agency", tagline: "Agencies — 10 seats, unlimited clients.", featured: false },
 ];
 
 export default async function BillingPage({
@@ -57,89 +54,172 @@ export default async function BillingPage({
       />
 
       {checkout === "success" ? (
-        <Card className="mb-6 border-emerald-200 bg-emerald-50">
-          <CardContent className="py-4 text-sm text-emerald-900">
-            Thanks — your subscription is being provisioned. Plan usually
-            updates within a few seconds.
-          </CardContent>
-        </Card>
+        <Banner tone="constructive">
+          Thanks — your subscription is being provisioned. Plan usually updates
+          within a few seconds.
+        </Banner>
       ) : null}
       {checkout === "cancelled" ? (
-        <Card className="mb-6 border-amber-200 bg-amber-50">
-          <CardContent className="py-4 text-sm text-amber-900">
-            Checkout was cancelled. Your plan is unchanged.
-          </CardContent>
-        </Card>
+        <Banner tone="warn">
+          Checkout was cancelled. Your plan is unchanged.
+        </Banner>
       ) : null}
       {changed === "1" && changedTo ? (
-        <Card className="mb-6 border-emerald-200 bg-emerald-50">
-          <CardContent className="py-4 text-sm text-emerald-900">
-            Plan updated to {PLAN_LABELS[changedTo as WorkspacePlan] ?? changedTo}.
-            Stripe will prorate the difference on your next invoice.
-          </CardContent>
-        </Card>
+        <Banner tone="constructive">
+          Plan updated to {PLAN_LABELS[changedTo as WorkspacePlan] ?? changedTo}.
+          Stripe will prorate the difference on your next invoice.
+        </Banner>
       ) : null}
 
-      <Card className="mb-8">
-        <CardContent className="flex flex-wrap items-center justify-between gap-4 py-5">
-          <div>
-            <p className="text-xs uppercase tracking-wide text-neutral-500">
-              Current plan
-            </p>
-            <p className="mt-1 flex items-center gap-2 text-lg font-semibold">
-              {PLAN_LABELS[currentPlan]}
-              <Badge variant={currentPlan === "oss" ? "outline" : "default"}>
-                {currentPlan === "oss" ? "free" : "paid"}
-              </Badge>
-            </p>
-          </div>
-          {hasCustomer ? (
-            <form action={createPortalSessionAction}>
-              <Button type="submit" variant="outline" size="sm">
-                Manage in Stripe
-              </Button>
-            </form>
-          ) : null}
-        </CardContent>
-      </Card>
+      <div className="cr-card mb-8 flex flex-wrap items-center justify-between gap-4 p-6">
+        <div>
+          <p className="cr-eyebrow">Current plan</p>
+          <p
+            className="mt-2 flex items-center gap-2.5"
+            style={{
+              fontFamily: "var(--font-display), serif",
+              fontWeight: 800,
+              fontSize: 32,
+              letterSpacing: "-0.02em",
+            }}
+          >
+            {PLAN_LABELS[currentPlan]}
+            {currentPlan === "oss" ? (
+              <span className="cr-badge">
+                <span
+                  className="cr-badge-dot"
+                  style={{ background: "var(--cr-line-strong)" }}
+                />
+                Free
+              </span>
+            ) : (
+              <span className="cr-badge cr-badge-approved">
+                <span className="cr-badge-dot" />
+                Active
+              </span>
+            )}
+          </p>
+        </div>
+        {hasCustomer ? (
+          <form action={createPortalSessionAction}>
+            <button type="submit" className="cr-btn cr-btn-sm">
+              Manage in Stripe
+            </button>
+          </form>
+        ) : null}
+      </div>
 
-      <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-neutral-500">
-        Available plans
-      </h2>
-      <div className="grid gap-3 md:grid-cols-3">
+      <div className="mb-4 flex items-center">
+        <h3
+          className="cr-display"
+          style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-0.01em" }}
+        >
+          Available plans
+        </h3>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-3">
         {PAID_PLANS.map((p) => {
           const isCurrent = currentPlan === p.id;
           return (
-            <Card
+            <div
               key={p.id}
-              className={isCurrent ? "border-neutral-900" : undefined}
+              className={p.featured ? "cr-card-raised p-6" : "cr-card p-6"}
             >
-              <CardContent className="flex h-full flex-col gap-3 py-5">
-                <div>
-                  <p className="text-sm font-semibold">{PLAN_LABELS[p.id]}</p>
-                  <p className="mt-1 text-xs text-neutral-600">{p.tagline}</p>
-                </div>
-                <div className="mt-auto">
-                  {isCurrent ? (
-                    <Button size="sm" variant="outline" disabled>
-                      Current plan
-                    </Button>
-                  ) : (
-                    <form action={createCheckoutSessionAction}>
-                      <input type="hidden" name="plan" value={p.id} />
-                      <Button size="sm" type="submit">
-                        {currentPlan === "oss"
-                          ? `Subscribe to ${PLAN_LABELS[p.id]}`
-                          : `Switch to ${PLAN_LABELS[p.id]}`}
-                      </Button>
-                    </form>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+              <div className="flex items-center gap-2">
+                <span
+                  style={{
+                    fontFamily: "var(--font-display), serif",
+                    fontWeight: 800,
+                    fontSize: 22,
+                    letterSpacing: "-0.01em",
+                  }}
+                >
+                  {PLAN_LABELS[p.id]}
+                </span>
+                {p.featured ? (
+                  <span
+                    className="cr-badge"
+                    style={{
+                      background: "var(--cr-ink)",
+                      color: "white",
+                      borderColor: "var(--cr-ink)",
+                    }}
+                  >
+                    Most popular
+                  </span>
+                ) : null}
+              </div>
+              <p
+                className="mt-1 text-[14px]"
+                style={{ color: "var(--cr-muted)" }}
+              >
+                {p.tagline}
+              </p>
+              <div className="mt-6">
+                {isCurrent ? (
+                  <button
+                    className="cr-btn cr-btn-sm cr-btn-ghost w-full"
+                    disabled
+                  >
+                    Current plan
+                  </button>
+                ) : (
+                  <form action={createCheckoutSessionAction}>
+                    <input type="hidden" name="plan" value={p.id} />
+                    <button
+                      type="submit"
+                      className={
+                        p.featured
+                          ? "cr-btn cr-btn-primary w-full"
+                          : "cr-btn w-full"
+                      }
+                    >
+                      {currentPlan === "oss"
+                        ? `Subscribe to ${PLAN_LABELS[p.id]}`
+                        : `Switch to ${PLAN_LABELS[p.id]}`}
+                    </button>
+                  </form>
+                )}
+              </div>
+            </div>
           );
         })}
       </div>
     </>
+  );
+}
+
+function Banner({
+  tone,
+  children,
+}: {
+  tone: "constructive" | "warn";
+  children: React.ReactNode;
+}) {
+  const bg =
+    tone === "constructive"
+      ? "var(--cr-constructive-soft)"
+      : "var(--cr-destructive-soft)";
+  const border =
+    tone === "constructive"
+      ? "var(--cr-constructive)"
+      : "var(--cr-destructive-ink)";
+  const color =
+    tone === "constructive"
+      ? "var(--cr-constructive)"
+      : "var(--cr-destructive-ink)";
+  return (
+    <div
+      className="mb-6 px-4 py-3 text-[14px] font-semibold"
+      style={{
+        background: bg,
+        border: `1.5px solid ${border}`,
+        borderRadius: "var(--cr-radius)",
+        color,
+      }}
+    >
+      {children}
+    </div>
   );
 }

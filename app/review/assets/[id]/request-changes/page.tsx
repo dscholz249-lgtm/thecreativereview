@@ -44,28 +44,37 @@ export default async function RequestChangesPage({
     (asset.type === "image" || asset.type === "design" || asset.type === "wireframe");
 
   return (
-    <>
-      <header className="mb-5">
-        <Link
-          href={`/review/assets/${asset.id}`}
-          className="text-xs text-neutral-500 hover:text-neutral-800"
-        >
-          ← Back to review
-        </Link>
-        <h1 className="mt-2 text-2xl font-semibold tracking-tight">
-          Request changes · {asset.name}
-        </h1>
-        <p className="mt-1 text-sm text-neutral-600">
+    <div className="mx-auto max-w-[1240px]">
+      <Link
+        href={`/review/assets/${asset.id}`}
+        className="cr-link mb-4 inline-block text-[14px]"
+      >
+        ← Back to review
+      </Link>
+
+      <div className="mb-8">
+        <p className="cr-eyebrow mb-2">
           {project?.name ?? "—"} · v{version.version_number}
         </p>
-      </header>
+        <h1
+          className="cr-display"
+          style={{
+            fontFamily: "var(--font-display), serif",
+            fontWeight: 800,
+            fontSize: 44,
+            letterSpacing: "-0.02em",
+          }}
+        >
+          Request changes · {asset.name}
+        </h1>
+      </div>
 
       {version.upload_note ? (
-        <div className="mb-5 rounded-md border border-neutral-200 bg-white p-3 text-sm text-neutral-800">
-          <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500 mb-1">
-            Note from the team
+        <div className="mb-6 cr-card p-5">
+          <p className="cr-eyebrow mb-2">Note from the team</p>
+          <p className="text-[15px]" style={{ color: "var(--cr-ink)" }}>
+            {version.upload_note}
           </p>
-          {version.upload_note}
         </div>
       ) : null}
 
@@ -77,6 +86,6 @@ export default async function RequestChangesPage({
         assetName={asset.name}
         flow={isImageFlow ? "image" : "non_image"}
       />
-    </>
+    </div>
   );
 }

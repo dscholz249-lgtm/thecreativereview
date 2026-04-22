@@ -11,10 +11,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { FormField } from "@/components/form-field";
+import { Upload } from "@/components/cr-icons";
 import { createNewVersionAction } from "@/app/(app)/assets/actions";
 import { MAX_UPLOAD_BYTES } from "@/lib/domain/asset";
 
@@ -57,47 +55,81 @@ export function UploadVersionDialog({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button variant="outline" size="sm" />}>
-        Upload new version
-      </DialogTrigger>
+      <DialogTrigger
+        render={
+          <button type="button" className="cr-btn cr-btn-sm">
+            <Upload size={14} /> Upload new version
+          </button>
+        }
+      />
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Upload new version</DialogTitle>
-          <DialogDescription>
-            The new version becomes the current one. Previous versions and their
-            feedback stay visible in the history.
+          <DialogTitle
+            style={{
+              fontFamily: "var(--font-display), serif",
+              fontWeight: 800,
+              fontSize: 22,
+              letterSpacing: "-0.01em",
+            }}
+          >
+            Upload new version
+          </DialogTitle>
+          <DialogDescription style={{ color: "var(--cr-muted)" }}>
+            The new version becomes the current one. Previous versions and
+            their feedback stay visible in the history.
           </DialogDescription>
         </DialogHeader>
-        <form action={handleSubmit} encType="multipart/form-data" className="flex flex-col gap-4">
+        <form action={handleSubmit} encType="multipart/form-data">
           <input type="hidden" name="asset_id" value={assetId} />
 
           {allowUrl ? (
-            <div className="inline-flex rounded-md border p-0.5 text-xs self-start">
-              <button
-                type="button"
-                onClick={() => setSource("file")}
-                className={`rounded px-3 py-1 ${source === "file" ? "bg-neutral-900 text-white" : "text-neutral-600"}`}
+            <div className="mb-5">
+              <div
+                className="inline-flex gap-0.5 rounded-lg p-0.5 text-[13px]"
+                style={{ border: "1px solid var(--cr-line-strong)" }}
               >
-                Upload file
-              </button>
-              <button
-                type="button"
-                onClick={() => setSource("url")}
-                className={`rounded px-3 py-1 ${source === "url" ? "bg-neutral-900 text-white" : "text-neutral-600"}`}
-              >
-                External URL
-              </button>
+                <button
+                  type="button"
+                  onClick={() => setSource("file")}
+                  className="rounded-md px-3 py-1 font-semibold"
+                  style={
+                    source === "file"
+                      ? { background: "var(--cr-ink)", color: "var(--cr-card)" }
+                      : { color: "var(--cr-muted)" }
+                  }
+                >
+                  Upload file
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSource("url")}
+                  className="rounded-md px-3 py-1 font-semibold"
+                  style={
+                    source === "url"
+                      ? { background: "var(--cr-ink)", color: "var(--cr-card)" }
+                      : { color: "var(--cr-muted)" }
+                  }
+                >
+                  External URL
+                </button>
+              </div>
             </div>
           ) : null}
 
           {effectiveSource === "file" ? (
-            <FormField label="File" name="file" hint="Up to 25 MB.">
-              <Input
+            <FormField
+              label="File"
+              name="file"
+              hint="Up to 25 MB."
+              error={error && error.startsWith("File is") ? error : undefined}
+            >
+              <input
                 id="file"
                 name="file"
                 type="file"
                 accept={acceptFor(assetType)}
                 required
+                className="cr-input"
                 onChange={(e) => {
                   const f = e.target.files?.[0];
                   if (f && f.size > MAX_UPLOAD_BYTES) {
@@ -110,12 +142,13 @@ export function UploadVersionDialog({
             </FormField>
           ) : (
             <FormField label="External URL" name="external_url">
-              <Input
+              <input
                 id="external_url"
                 name="external_url"
                 type="url"
                 placeholder="https://figma.com/..."
                 required
+                className="cr-input"
               />
             </FormField>
           )}
@@ -125,18 +158,38 @@ export function UploadVersionDialog({
             name="upload_note"
             hint="Optional. Plain text, max 500 characters. Shown to reviewers."
           >
-            <Textarea name="upload_note" rows={3} maxLength={500} />
+            <textarea
+              name="upload_note"
+              rows={3}
+              maxLength={500}
+              className="cr-textarea"
+            />
           </FormField>
 
-          {error ? <p className="text-xs text-red-600">{error}</p> : null}
+          {error && !error.startsWith("File is") ? (
+            <p
+              className="mb-3 text-[13px] font-semibold"
+              style={{ color: "var(--cr-destructive-ink)" }}
+            >
+              {error}
+            </p>
+          ) : null}
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+            <button
+              type="button"
+              className="cr-btn cr-btn-ghost"
+              onClick={() => setOpen(false)}
+            >
               Cancel
-            </Button>
-            <Button type="submit" disabled={pending}>
-              {pending ? "Uploading…" : "Upload version"}
-            </Button>
+            </button>
+            <button
+              type="submit"
+              disabled={pending}
+              className="cr-btn cr-btn-constructive"
+            >
+              <Upload /> {pending ? "Uploading…" : "Upload version"}
+            </button>
           </DialogFooter>
         </form>
       </DialogContent>

@@ -1,8 +1,7 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { PageHeading } from "@/components/page-heading";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Avatar, avatarVariantFor } from "@/components/cr-avatar";
 import { InviteReviewerForm } from "./invite-reviewer-form";
 import { removeReviewerAction } from "./actions";
 
@@ -41,49 +40,94 @@ export default async function ReviewersPage({
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
         <div>
-          <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-neutral-500">
+          <h3
+            className="cr-display mb-4"
+            style={{
+              fontSize: 22,
+              fontWeight: 700,
+              letterSpacing: "-0.01em",
+            }}
+          >
             Invited reviewers
-          </h2>
+          </h3>
           {!reviewers || reviewers.length === 0 ? (
-            <Card>
-              <CardContent className="py-12 text-center text-sm text-neutral-600">
+            <div className="cr-card flex flex-col items-center py-14 text-center">
+              <p className="text-[15px]" style={{ color: "var(--cr-muted)" }}>
                 No reviewers yet. Invite the first one on the right.
-              </CardContent>
-            </Card>
+              </p>
+            </div>
           ) : (
-            <div className="grid gap-3">
-              {reviewers.map((r) => (
-                <Card key={r.id}>
-                  <CardContent className="flex items-center justify-between py-3">
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-medium">
-                        {r.name ?? r.email}
+            <div className="flex flex-col gap-3">
+              {reviewers.map((r) => {
+                const display = r.name ?? r.email;
+                return (
+                  <div
+                    key={r.id}
+                    className="cr-card flex items-center gap-4 p-5"
+                  >
+                    <Avatar
+                      label={display}
+                      variant={avatarVariantFor(display)}
+                    />
+                    <div className="min-w-0 flex-1">
+                      <p
+                        className="truncate"
+                        style={{
+                          fontFamily: "var(--font-display), serif",
+                          fontWeight: 700,
+                          fontSize: 18,
+                          letterSpacing: "-0.01em",
+                        }}
+                      >
+                        {display}
                       </p>
                       {r.name ? (
-                        <p className="text-xs text-neutral-500">{r.email}</p>
+                        <p
+                          className="truncate text-[13px]"
+                          style={{ color: "var(--cr-muted)" }}
+                        >
+                          {r.email}
+                        </p>
                       ) : null}
-                      <p className="text-[11px] uppercase tracking-wide text-neutral-400 mt-1">
+                      <p
+                        className="mt-1 text-[11px] font-bold uppercase tracking-[0.08em]"
+                        style={{
+                          color: r.auth_user_id
+                            ? "var(--cr-constructive)"
+                            : "var(--cr-muted)",
+                        }}
+                      >
                         {r.auth_user_id ? "Active" : "Invite pending"}
                       </p>
                     </div>
                     <form action={removeReviewerAction}>
                       <input type="hidden" name="id" value={r.id} />
                       <input type="hidden" name="client_id" value={client.id} />
-                      <Button type="submit" variant="outline" size="sm">
+                      <button
+                        type="submit"
+                        className="cr-btn cr-btn-sm cr-btn-ghost"
+                      >
                         Remove
-                      </Button>
+                      </button>
                     </form>
-                  </CardContent>
-                </Card>
-              ))}
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
 
         <aside>
-          <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-neutral-500">
+          <h3
+            className="cr-display mb-4"
+            style={{
+              fontSize: 22,
+              fontWeight: 700,
+              letterSpacing: "-0.01em",
+            }}
+          >
             Invite a new reviewer
-          </h2>
+          </h3>
           <InviteReviewerForm clientId={client.id} />
         </aside>
       </div>

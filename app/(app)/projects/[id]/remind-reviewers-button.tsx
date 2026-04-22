@@ -1,7 +1,6 @@
 "use client";
 
 import { useActionState } from "react";
-import { Button } from "@/components/ui/button";
 import {
   sendManualReminderAction,
   type ActionResult,
@@ -24,28 +23,40 @@ export function RemindReviewersButton({
 
   const onCooldown =
     cooldownUntilIso !== null && new Date(cooldownUntilIso) > new Date();
+  const disabled = pending || onCooldown;
 
   return (
     <form action={formAction} className="flex items-center gap-3">
       <input type="hidden" name="project_id" value={projectId} />
-      <Button
+      <button
         type="submit"
-        variant="outline"
-        size="sm"
-        disabled={pending || onCooldown}
+        className="cr-btn cr-btn-sm cr-btn-ghost"
+        disabled={disabled}
+        aria-disabled={disabled}
         title={
           onCooldown
             ? "Reviewers can only be nudged once every 24 hours."
             : "Email all reviewers with pending work on this project"
         }
       >
-        {pending ? "Sending…" : onCooldown ? "Reminder on cooldown" : "Nudge reviewers"}
-      </Button>
+        {pending
+          ? "Sending…"
+          : onCooldown
+            ? "Reminder on cooldown"
+            : "Nudge reviewers"}
+      </button>
       {state && state.ok && state.message ? (
-        <p className="text-xs text-neutral-600">{state.message}</p>
+        <p className="text-[13px]" style={{ color: "var(--cr-muted)" }}>
+          {state.message}
+        </p>
       ) : null}
       {state && !state.ok ? (
-        <p className="text-xs text-red-600">{state.error}</p>
+        <p
+          className="text-[13px] font-semibold"
+          style={{ color: "var(--cr-destructive-ink)" }}
+        >
+          {state.error}
+        </p>
       ) : null}
     </form>
   );

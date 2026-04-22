@@ -1,18 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState, useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { FormField } from "@/components/form-field";
+import { Upload } from "@/components/cr-icons";
 import {
   createAssetWithVersionAction,
   type ActionResult,
@@ -21,7 +12,20 @@ import { MAX_UPLOAD_BYTES } from "@/lib/domain/asset";
 
 type AssetType = "image" | "document" | "design" | "wireframe";
 
-export function NewAssetForm({ projectId }: { projectId: string }) {
+const TYPE_CHIPS: Array<{ id: AssetType; label: string; hint: string }> = [
+  { id: "image", label: "Image", hint: "PNG / JPEG / SVG" },
+  { id: "document", label: "PDF", hint: "Document" },
+  { id: "design", label: "Design", hint: "Upload or link" },
+  { id: "wireframe", label: "Wireframe", hint: "Upload or link" },
+];
+
+export function NewAssetForm({
+  projectId,
+  cancelHref,
+}: {
+  projectId: string;
+  cancelHref: string;
+}) {
   const [state, action, pending] = useActionState<ActionResult | null, FormData>(
     createAssetWithVersionAction,
     null,
@@ -32,84 +36,145 @@ export function NewAssetForm({ projectId }: { projectId: string }) {
 
   const allowUrl = type === "design" || type === "wireframe";
   const effectiveSource = allowUrl ? source : "file";
-
   const err = state?.ok === false ? state : null;
 
   return (
-    <Card>
-      <CardContent className="py-6">
-        <form
-          action={(formData) => {
-            // Block oversize uploads before the network round-trip. The same
-            // limit is enforced server-side in the action + by Next's
-            // serverActions.bodySizeLimit in next.config.ts.
-            const f = formData.get("file");
-            if (f instanceof File && f.size > MAX_UPLOAD_BYTES) {
-              setFileError(formatTooLarge(f.size));
-              return;
-            }
-            setFileError(null);
-            action(formData);
-          }}
-          className="flex flex-col gap-4"
-          encType="multipart/form-data"
-        >
-          <input type="hidden" name="project_id" value={projectId} />
+    <div className="cr-card-raised p-6 sm:p-7">
+      <form
+        action={(formData) => {
+          // Block oversize uploads before the network round-trip. The same
+          // limit is enforced server-side in the action + by Next's
+          // serverActions.bodySizeLimit in next.config.ts.
+          const f = formData.get("file");
+          if (f instanceof File && f.size > MAX_UPLOAD_BYTES) {
+            setFileError(formatTooLarge(f.size));
+            return;
+          }
+          setFileError(null);
+          action(formData);
+        }}
+        encType="multipart/form-data"
+      >
+        <input type="hidden" name="project_id" value={projectId} />
+        <input type="hidden" name="type" value={type} />
 
-          <FormField label="Name" name="name" error={err?.fieldErrors?.name}>
-            <Input id="name" name="name" placeholder="Homepage hero v1" required />
-          </FormField>
+        <FormField label="Name" name="name" error={err?.fieldErrors?.name}>
+          <input
+            id="name"
+            name="name"
+            placeholder="Homepage hero v1"
+            required
+            className="cr-input"
+          />
+        </FormField>
 
-          <FormField label="Type" name="type" error={err?.fieldErrors?.type}>
-            <Select
-              name="type"
-              value={type}
-              onValueChange={(v) => setType(v as AssetType)}
+        <FormField label="Type" name="type" error={err?.fieldErrors?.type}>
+          <div className="flex flex-wrap gap-2">
+            {TYPE_CHIPS.map((chip) => {
+              const active = chip.id === type;
+              return (
+                <button
+                  key={chip.id}
+                  type="button"
+                  onClick={() => setType(chip.id)}
+                  className={
+                    active
+                      ? "cr-btn cr-btn-sm cr-btn-primary"
+                      : "cr-btn cr-btn-sm cr-btn-ghost"
+                  }
+                  title={chip.hint}
+                  aria-pressed={active}
+                >
+                  {chip.label}
+                </button>
+              );
+            })}
+          </div>
+        </FormField>
+
+        {allowUrl ? (
+          <div className="mb-5">
+            <div
+              className="inline-flex gap-0.5 rounded-lg p-0.5 text-[13px]"
+              style={{ border: "1px solid var(--cr-line-strong)" }}
             >
-              <SelectTrigger id="type">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="image">Image (PNG / JPEG / SVG)</SelectItem>
-                <SelectItem value="document">Document (PDF)</SelectItem>
-                <SelectItem value="design">Design (upload or external URL)</SelectItem>
-                <SelectItem value="wireframe">Wireframe (upload or external URL)</SelectItem>
-              </SelectContent>
-            </Select>
-          </FormField>
-
-          {allowUrl ? (
-            <div className="inline-flex rounded-md border p-0.5 text-xs self-start">
               <button
                 type="button"
                 onClick={() => setSource("file")}
-                className={`rounded px-3 py-1 ${source === "file" ? "bg-neutral-900 text-white" : "text-neutral-600"}`}
+                className={
+                  source === "file" ? "rounded-md px-3 py-1 font-semibold" : "rounded-md px-3 py-1 font-semibold"
+                }
+                style={
+                  source === "file"
+                    ? { background: "var(--cr-ink)", color: "var(--cr-card)" }
+                    : { color: "var(--cr-muted)" }
+                }
               >
                 Upload file
               </button>
               <button
                 type="button"
                 onClick={() => setSource("url")}
-                className={`rounded px-3 py-1 ${source === "url" ? "bg-neutral-900 text-white" : "text-neutral-600"}`}
+                className="rounded-md px-3 py-1 font-semibold"
+                style={
+                  source === "url"
+                    ? { background: "var(--cr-ink)", color: "var(--cr-card)" }
+                    : { color: "var(--cr-muted)" }
+                }
               >
                 External URL
               </button>
             </div>
-          ) : null}
+          </div>
+        ) : null}
 
-          {effectiveSource === "file" ? (
-            <FormField
-              label="File"
-              name="file"
-              hint="Up to 25 MB. Images (PNG/JPEG/SVG) support annotations; PDFs are text-only feedback."
-              error={fileError ?? err?.fieldErrors?.file}
+        {effectiveSource === "file" ? (
+          <FormField
+            label="File"
+            name="file"
+            hint="Up to 25 MB. Images (PNG/JPEG/SVG) support annotations; PDFs are text-only feedback."
+            error={fileError ?? err?.fieldErrors?.file}
+          >
+            <div
+              className="flex flex-col items-center gap-2.5 px-5 py-7 text-center"
+              style={{
+                border: "1.5px dashed var(--cr-line-strong)",
+                borderRadius: "var(--cr-radius)",
+                background: "var(--cr-paper-2)",
+              }}
             >
-              <Input
+              <span
+                className="flex size-11 items-center justify-center rounded-full"
+                style={{
+                  background: "var(--cr-ink)",
+                  color: "var(--cr-card)",
+                }}
+              >
+                <Upload size={18} />
+              </span>
+              <div
+                className="text-[18px]"
+                style={{
+                  fontFamily: "var(--font-display), serif",
+                  fontWeight: 700,
+                }}
+              >
+                Drop file or click to browse
+              </div>
+              <div
+                className="text-[13px]"
+                style={{ color: "var(--cr-muted)" }}
+              >
+                Images support pin annotations. PDFs are text-only feedback.
+              </div>
+              <input
                 id="file"
                 name="file"
                 type="file"
                 accept={acceptFor(type)}
                 required
+                className="mt-1 cr-input"
+                style={{ maxWidth: 360 }}
                 onChange={(e) => {
                   const f = e.target.files?.[0];
                   if (f && f.size > MAX_UPLOAD_BYTES) {
@@ -119,52 +184,80 @@ export function NewAssetForm({ projectId }: { projectId: string }) {
                   }
                 }}
               />
-            </FormField>
-          ) : (
-            <FormField
-              label="External URL"
+            </div>
+          </FormField>
+        ) : (
+          <FormField
+            label="External URL"
+            name="external_url"
+            hint="Figma or similar. Reviewers will see the link and leave text feedback."
+            error={err?.fieldErrors?.external_url}
+          >
+            <input
+              id="external_url"
               name="external_url"
-              hint="Figma or similar. Reviewers will see the link and leave text feedback."
-              error={err?.fieldErrors?.external_url}
-            >
-              <Input
-                id="external_url"
-                name="external_url"
-                type="url"
-                placeholder="https://figma.com/..."
-                required
-              />
-            </FormField>
-          )}
+              type="url"
+              placeholder="https://figma.com/..."
+              required
+              className="cr-input"
+            />
+          </FormField>
+        )}
 
-          <FormField
-            label="Upload note"
+        <FormField
+          label="Upload note"
+          name="upload_note"
+          hint="Optional. Plain text, max 500 characters. Shown to reviewers as context."
+          error={err?.fieldErrors?.upload_note}
+        >
+          <textarea
+            id="upload_note"
             name="upload_note"
-            hint="Optional. Plain text, max 500 characters. Shown to reviewers as context."
-            error={err?.fieldErrors?.upload_note}
-          >
-            <Textarea id="upload_note" name="upload_note" rows={3} maxLength={500} />
-          </FormField>
+            rows={3}
+            maxLength={500}
+            className="cr-textarea"
+            placeholder="What should reviewers focus on?"
+          />
+        </FormField>
 
-          <FormField
-            label="Deadline"
+        <FormField
+          label="Deadline"
+          name="deadline"
+          hint="Optional. We'll ping reviewers a couple of days out."
+          error={err?.fieldErrors?.deadline}
+        >
+          <input
+            id="deadline"
             name="deadline"
-            hint="Optional."
-            error={err?.fieldErrors?.deadline}
+            type="date"
+            className="cr-input"
+            style={{ maxWidth: 240 }}
+          />
+        </FormField>
+
+        {err?.error ? (
+          <p
+            className="mb-4 text-[13px] font-semibold"
+            style={{ color: "var(--cr-destructive-ink)" }}
           >
-            <Input id="deadline" name="deadline" type="date" />
-          </FormField>
+            {err.error}
+          </p>
+        ) : null}
 
-          {err?.error ? <p className="text-xs text-red-600">{err.error}</p> : null}
-
-          <div className="flex justify-end">
-            <Button type="submit" disabled={pending}>
-              {pending ? "Uploading…" : "Upload asset"}
-            </Button>
-          </div>
-        </form>
-      </CardContent>
-    </Card>
+        <div className="mt-2 flex items-center justify-end gap-2.5">
+          <Link href={cancelHref} className="cr-btn cr-btn-ghost">
+            Cancel
+          </Link>
+          <button
+            type="submit"
+            disabled={pending}
+            className="cr-btn cr-btn-constructive"
+          >
+            <Upload /> {pending ? "Uploading…" : "Upload asset"}
+          </button>
+        </div>
+      </form>
+    </div>
   );
 }
 
