@@ -8,6 +8,12 @@ const schema = z.object({
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1),
   NEXT_PUBLIC_APP_URL: z.string().url().default("http://localhost:3000"),
   NEXT_PUBLIC_SENTRY_DSN: z.string().url().optional(),
+  // Controls what the anonymous `/` visitor sees:
+  //   waitlist → pre-launch "get early access" form (default, fail-safe for
+  //              pre-launch production)
+  //   live     → full marketing landing with Start free / Log in CTAs
+  // Flip to 'live' on Railway when launching; no code deploy needed.
+  NEXT_PUBLIC_LAUNCH_MODE: z.enum(["waitlist", "live"]).default("waitlist"),
 });
 
 // Coerce "" → undefined so `.default()` and `.optional()` kick in when a
@@ -20,6 +26,7 @@ const raw = {
   NEXT_PUBLIC_SUPABASE_ANON_KEY: emptyToUndefined(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY),
   NEXT_PUBLIC_APP_URL: emptyToUndefined(process.env.NEXT_PUBLIC_APP_URL),
   NEXT_PUBLIC_SENTRY_DSN: emptyToUndefined(process.env.NEXT_PUBLIC_SENTRY_DSN),
+  NEXT_PUBLIC_LAUNCH_MODE: emptyToUndefined(process.env.NEXT_PUBLIC_LAUNCH_MODE),
 };
 
 export const env = schema.parse(raw);
