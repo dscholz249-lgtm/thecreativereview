@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { CreativeReviewLogo } from "@/components/creative-review-logo";
 import { logout } from "@/app/(auth)/actions";
 
 export default async function ReviewLayout({
@@ -34,15 +35,9 @@ export default async function ReviewLayout({
         <div className="mx-auto flex max-w-[1200px] items-center justify-between px-6 py-4 sm:px-10">
           <Link
             href="/review/my-reviews"
-            className="flex items-center gap-2.5"
+            aria-label="My reviews"
           >
-            <span className="cr-logo-mark">CR</span>
-            <span
-              className="text-[20px] font-extrabold tracking-tight"
-              style={{ fontFamily: "var(--font-display), serif" }}
-            >
-              Creative Review
-            </span>
+            <CreativeReviewLogo fontSize={16} withEyebrow={false} />
           </Link>
           <div className="flex items-center gap-4 text-[14px]">
             <span style={{ color: "var(--cr-muted)" }}>

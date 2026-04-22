@@ -29,7 +29,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Creative Review",
+  title: "The Creative Review",
   description:
     "A focused creative review and approval tool for freelancers and small teams. Clean approvals, click-to-pin feedback.",
 };
