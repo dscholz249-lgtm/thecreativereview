@@ -1,7 +1,11 @@
 // How It Works — reviewer flow, four steps. Lives between features and
 // pricing on both the live marketing and waitlist pages; reuses the
 // numbered ink square with green offset shadow from the features cards
-// so visual grammar is consistent.
+// so visual grammar is consistent. The ProductPreview card anchors the
+// section — a concrete glimpse of the review workspace sits above the
+// numbered explanation of what happens on it.
+
+import { ProductPreview } from "./product-preview";
 
 const STEPS = [
   {
@@ -52,6 +56,10 @@ export function LandingHowItWorks() {
             The reviewer side is the whole product. If your clients can&apos;t
             approve in under a minute, nothing else matters.
           </p>
+        </div>
+
+        <div className="mb-12">
+          <ProductPreview />
         </div>
 
         <ol className="grid gap-4 md:grid-cols-2">

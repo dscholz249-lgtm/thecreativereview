@@ -1,10 +1,9 @@
 import Link from "next/link";
 import { ArrowRight } from "./icons";
-import { ProductPreview } from "./product-preview";
 
-// Live-marketing hero. Preview card is shared with the waitlist hero
-// via ./product-preview so both pre-launch and post-launch renders
-// show the same mock review workspace.
+// Live-marketing hero. The mock product-preview card used to live here
+// but moved into the How-It-Works section (where it anchors the 4-step
+// reviewer flow better than floating below the CTA buttons).
 export function LandingHero() {
   return (
     <section className="mx-auto max-w-6xl px-6 pt-16 pb-10 sm:px-10 sm:pt-24 sm:pb-16">
@@ -39,10 +38,6 @@ export function LandingHero() {
         <Link href="#features" className="cr-btn cr-btn-lg cr-btn-ghost">
           See a sample review →
         </Link>
-      </div>
-
-      <div className="mt-16">
-        <ProductPreview />
       </div>
     </section>
   );
