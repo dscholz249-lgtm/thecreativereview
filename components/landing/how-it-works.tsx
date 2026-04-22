@@ -5,20 +5,20 @@
 
 const STEPS = [
   {
-    heading: "Your designer sends one link.",
-    body: "An asset goes up; you get an email with a single button. No account to create, no password to forget — the link is the login.",
+    heading: "Send your client one link.",
+    body: "Upload the asset and we email your client a single button. No account for them to create, no password for them to forget — the link is their login.",
   },
   {
-    heading: "Open the asset in your browser.",
-    body: "You see the artwork full-size with any note the team wrote for you. No threads, no chat — just the file and two clear next steps.",
+    heading: "They open the asset in their browser.",
+    body: "Your work renders full-size with the note you attached. No threads, no chat — just the file and two clear next steps for them.",
   },
   {
-    heading: "Approve cleanly, or pin what needs to change.",
-    body: "Approve and the work is done. Request changes and the annotator unlocks — click anywhere on an image to drop a numbered pin with a comment.",
+    heading: "They approve cleanly, or pin what needs to change.",
+    body: "Approve means done — no \"looks good, but…\" landing in your inbox. Request changes unlocks the annotator: they click anywhere on the image to drop a numbered pin with a comment.",
   },
   {
-    heading: "Your team gets notified instantly.",
-    body: "Decisions are timestamped and archived. Every version of the asset stays in history with its decisions attached, so nothing gets lost when you iterate.",
+    heading: "You get notified instantly.",
+    body: "Every decision is timestamped and archived. Each version of the asset stays in history with its decisions and pins attached, so nothing gets lost when you iterate.",
   },
 ];
 
