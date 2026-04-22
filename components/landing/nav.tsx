@@ -1,41 +1,51 @@
 import Link from "next/link";
-import { buttonVariants } from "@/components/ui/button";
 
-// Sticky top nav. Marketing-only — the in-app nav (components/app-nav) is
-// a different component because logged-in admins see a workspace dropdown +
-// internal links, not marketing anchors.
+// Marketing top nav. 2px ink bottom rule + the logo-mark CR badge with the
+// accent-green hard offset shadow is the signature — don't drop either
+// without a matching update in the app chrome.
 export function LandingNav() {
   return (
-    <header className="sticky top-0 z-10 border-b border-neutral-200 bg-white/80 backdrop-blur">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3">
-        <Link href="/" className="text-sm font-semibold tracking-tight">
-          Creative Review
+    <header
+      className="sticky top-0 z-10 bg-[var(--cr-card)]"
+      style={{ borderBottom: "2px solid var(--cr-ink)" }}
+    >
+      <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4 sm:px-10">
+        <Link href="/" className="flex items-center gap-2.5">
+          <span className="cr-logo-mark">CR</span>
+          <span
+            className="text-[20px] font-extrabold tracking-tight"
+            style={{ fontFamily: "var(--font-display), serif" }}
+          >
+            Creative Review
+          </span>
         </Link>
-        <nav className="flex items-center gap-2 text-sm">
+        <nav className="flex items-center gap-5 sm:gap-7">
           <Link
             href="#features"
-            className="hidden px-2 py-1 text-neutral-600 hover:text-neutral-900 sm:inline"
+            className="hidden text-[15px] font-semibold text-[var(--cr-muted)] hover:text-[var(--cr-ink)] sm:inline"
           >
-            Features
+            Product
           </Link>
           <Link
             href="#pricing"
-            className="hidden px-2 py-1 text-neutral-600 hover:text-neutral-900 sm:inline"
+            className="hidden text-[15px] font-semibold text-[var(--cr-muted)] hover:text-[var(--cr-ink)] sm:inline"
           >
             Pricing
           </Link>
           <Link
-            href="/login"
-            className="px-2 py-1 text-neutral-600 hover:text-neutral-900"
+            href="#agencies"
+            className="hidden text-[15px] font-semibold text-[var(--cr-muted)] hover:text-[var(--cr-ink)] md:inline"
           >
-            Log in
+            For agencies
           </Link>
-          <Link
-            href="/signup"
-            className={buttonVariants({ size: "sm" })}
-          >
-            Start free
-          </Link>
+          <div className="flex items-center gap-2 sm:ml-3">
+            <Link href="/login" className="cr-btn cr-btn-sm cr-btn-ghost">
+              Log in
+            </Link>
+            <Link href="/signup" className="cr-btn cr-btn-sm cr-btn-primary">
+              Start free
+            </Link>
+          </div>
         </nav>
       </div>
     </header>

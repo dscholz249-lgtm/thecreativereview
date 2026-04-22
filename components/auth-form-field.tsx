@@ -1,4 +1,8 @@
-import { cn } from "@/lib/utils";
+// Auth-page form primitives. Built on the cr-* design tokens so login /
+// signup match the marketing surface exactly; in-product forms have
+// slightly different spacing and will get their own primitives in PR 3.
+
+import type { ReactNode } from "react";
 
 export function Field({
   label,
@@ -8,7 +12,8 @@ export function Field({
   autoComplete,
   placeholder,
   minLength,
-  className,
+  defaultValue,
+  children,
 }: {
   label: string;
   name: string;
@@ -17,11 +22,15 @@ export function Field({
   autoComplete?: string;
   placeholder?: string;
   minLength?: number;
-  className?: string;
+  defaultValue?: string;
+  children?: ReactNode;
 }) {
   return (
-    <label className={cn("block", className)}>
-      <span className="mb-1 block text-sm font-medium text-neutral-800">
+    <label className="mb-5 flex flex-col gap-2">
+      <span
+        className="text-[14px] font-bold"
+        style={{ color: "var(--cr-ink)", letterSpacing: "0.02em" }}
+      >
         {label}
       </span>
       <input
@@ -31,8 +40,10 @@ export function Field({
         autoComplete={autoComplete}
         placeholder={placeholder}
         minLength={minLength}
-        className="block w-full rounded-md border border-neutral-300 px-3 py-2 text-sm shadow-sm focus:border-neutral-500 focus:outline-none focus:ring-1 focus:ring-neutral-500"
+        defaultValue={defaultValue}
+        className="cr-input"
       />
+      {children}
     </label>
   );
 }
@@ -48,7 +59,7 @@ export function SubmitButton({
     <button
       type="submit"
       disabled={pending}
-      className="w-full rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-60"
+      className="cr-btn cr-btn-primary cr-btn-lg w-full"
     >
       {pending ? "Working…" : children}
     </button>

@@ -2,35 +2,56 @@ import Link from "next/link";
 
 export function LandingFooter() {
   return (
-    <footer className="border-t border-neutral-200 bg-white">
-      <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-6 px-6 py-10 sm:flex-row sm:items-center">
+    <footer
+      className="bg-[var(--cr-card)]"
+      style={{ borderTop: "1px solid var(--cr-line)" }}
+    >
+      <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-7 px-6 py-10 sm:flex-row sm:items-center sm:px-10">
         <div>
-          <p className="text-sm font-semibold text-neutral-900">
-            Creative Review
-          </p>
-          <p className="mt-1 text-xs text-neutral-500">
+          <div className="flex items-center gap-2.5">
+            <span className="cr-logo-mark">CR</span>
+            <span
+              className="text-[16px] font-extrabold tracking-tight"
+              style={{ fontFamily: "var(--font-display), serif" }}
+            >
+              Creative Review
+            </span>
+          </div>
+          <p
+            className="mt-2 text-[13px]"
+            style={{ color: "var(--cr-muted)" }}
+          >
             A focused approval tool for freelancers and small teams.
           </p>
         </div>
-        <nav className="flex flex-wrap items-center gap-5 text-sm text-neutral-600">
-          <Link href="#features" className="hover:text-neutral-900">
-            Features
+        <nav
+          className="flex flex-wrap items-center gap-5 text-[14px] font-semibold"
+          style={{ color: "var(--cr-muted)" }}
+        >
+          <Link href="#features" className="hover:text-[var(--cr-ink)]">
+            Product
           </Link>
-          <Link href="#pricing" className="hover:text-neutral-900">
+          <Link href="#pricing" className="hover:text-[var(--cr-ink)]">
             Pricing
           </Link>
-          <Link href="/login" className="hover:text-neutral-900">
+          <Link href="/login" className="hover:text-[var(--cr-ink)]">
             Log in
           </Link>
-          <Link href="/signup" className="hover:text-neutral-900">
+          <Link href="/signup" className="hover:text-[var(--cr-ink)]">
             Sign up
           </Link>
         </nav>
       </div>
-      <div className="border-t border-neutral-100">
-        <div className="mx-auto max-w-6xl px-6 py-4 text-xs text-neutral-500">
+      <div
+        className="px-6 py-4 sm:px-10"
+        style={{
+          borderTop: "1px solid var(--cr-line)",
+          color: "var(--cr-muted)",
+        }}
+      >
+        <p className="mx-auto max-w-6xl text-[12px]">
           © {new Date().getFullYear()} Creative Review.
-        </div>
+        </p>
       </div>
     </footer>
   );

@@ -2,7 +2,6 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { LandingNav } from "@/components/landing/nav";
 import { LandingHero } from "@/components/landing/hero";
-import { LandingValueProp } from "@/components/landing/value-prop";
 import { LandingFeatures } from "@/components/landing/features";
 import { LandingPricing } from "@/components/landing/pricing";
 import { LandingCta } from "@/components/landing/cta";
@@ -38,11 +37,10 @@ export default async function HomePage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-white">
+    <div className="cr-surface flex min-h-screen flex-col">
       <LandingNav />
       <main className="flex-1">
         <LandingHero />
-        <LandingValueProp />
         <LandingFeatures />
         <LandingPricing />
         <LandingCta />

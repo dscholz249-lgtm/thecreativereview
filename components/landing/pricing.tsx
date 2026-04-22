@@ -1,10 +1,12 @@
 import Link from "next/link";
-import { buttonVariants } from "@/components/ui/button";
 
-// Prices are display-only copy. The real amounts live in Stripe and flow
-// through the checkout page — we never bill based on what's written here.
-// If Stripe prices change, update this table so the marketing page stays
-// honest; the checkout amount is the authoritative source.
+// Pricing tiers. The design bundle didn't include a pricing table — we're
+// keeping the existing tier structure but restyling it in the new language.
+// Claude Design can rework the card treatment in a follow-up; the tier
+// data is the source of truth regardless.
+//
+// Prices are display-only. Stripe is the authoritative source of billed
+// amounts — keep these numbers in sync if Stripe pricing changes.
 const TIERS = [
   {
     name: "Solo",
@@ -57,17 +59,29 @@ export function LandingPricing() {
   return (
     <section
       id="pricing"
-      className="border-t border-neutral-200 bg-neutral-50"
+      className="border-y py-16 sm:py-20"
+      style={{ borderColor: "var(--cr-line)", background: "var(--cr-paper-2)" }}
     >
-      <div className="mx-auto max-w-6xl px-6 py-20 sm:py-24">
-        <div className="mb-12 max-w-2xl">
-          <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
-            Pricing
-          </p>
-          <h2 className="mt-3 text-3xl font-semibold tracking-tight text-neutral-900 sm:text-4xl">
-            Flat monthly pricing. Cancel anytime.
+      <div className="mx-auto max-w-6xl px-6 sm:px-10">
+        <div className="mb-10 max-w-2xl">
+          <p className="cr-eyebrow mb-4">Pricing</p>
+          <h2
+            style={{
+              fontFamily: "var(--font-display), serif",
+              fontWeight: 800,
+              fontSize: 40,
+              lineHeight: 1.05,
+              letterSpacing: "-0.02em",
+            }}
+          >
+            Flat monthly pricing.
+            <br />
+            <span style={{ color: "var(--cr-muted)" }}>Cancel anytime.</span>
           </h2>
-          <p className="mt-4 text-neutral-600">
+          <p
+            className="mt-4 text-[17px]"
+            style={{ color: "var(--cr-ink-2)" }}
+          >
             Start on any tier, switch freely from your billing page. No
             per-reviewer charges — your clients never need an account.
           </p>
@@ -77,48 +91,71 @@ export function LandingPricing() {
           {TIERS.map((tier) => (
             <div
               key={tier.plan}
-              className={`flex h-full flex-col rounded-2xl border bg-white p-6 ${
-                tier.featured
-                  ? "border-neutral-900 ring-1 ring-neutral-900"
-                  : "border-neutral-200"
-              }`}
+              className={tier.featured ? "cr-card-raised p-7" : "cr-card p-7"}
             >
-              {tier.featured ? (
-                <p className="mb-3 inline-flex w-fit rounded-full bg-neutral-900 px-2.5 py-0.5 text-xs font-medium text-white">
-                  Most popular
+              <div className="flex items-center gap-2">
+                <p
+                  style={{
+                    fontFamily: "var(--font-display), serif",
+                    fontWeight: 800,
+                    fontSize: 22,
+                  }}
+                >
+                  {tier.name}
                 </p>
-              ) : null}
-              <p className="text-sm font-semibold text-neutral-900">
-                {tier.name}
+                {tier.featured ? (
+                  <span
+                    className="cr-badge"
+                    style={{
+                      background: "var(--cr-ink)",
+                      color: "white",
+                      borderColor: "var(--cr-ink)",
+                    }}
+                  >
+                    Most popular
+                  </span>
+                ) : null}
+              </div>
+              <p
+                className="mt-1 text-[14px]"
+                style={{ color: "var(--cr-muted)" }}
+              >
+                {tier.tagline}
               </p>
-              <p className="mt-1 text-xs text-neutral-600">{tier.tagline}</p>
-              <p className="mt-4">
-                <span className="text-4xl font-semibold text-neutral-900">
+              <div className="mt-5 flex items-baseline gap-1">
+                <span
+                  style={{
+                    fontFamily: "var(--font-display), serif",
+                    fontWeight: 800,
+                    fontSize: 48,
+                    letterSpacing: "-0.03em",
+                    lineHeight: 1,
+                  }}
+                >
                   {tier.price}
                 </span>
-                <span className="text-sm text-neutral-500">{tier.cadence}</span>
-              </p>
-              <ul className="mt-6 flex-1 space-y-2 text-sm text-neutral-700">
+                <span
+                  className="text-[15px]"
+                  style={{ color: "var(--cr-muted)" }}
+                >
+                  {tier.cadence}
+                </span>
+              </div>
+              <ul className="mt-6 flex flex-col gap-2 text-[15px]">
                 {tier.features.map((f) => (
                   <li key={f} className="flex gap-2">
-                    <svg
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      className="mt-0.5 size-4 shrink-0 text-neutral-400"
-                    >
-                      <path d="M20 6 9 17l-5-5" />
-                    </svg>
-                    {f}
+                    <CheckGlyph />
+                    <span style={{ color: "var(--cr-ink)" }}>{f}</span>
                   </li>
                 ))}
               </ul>
               <Link
                 href="/signup"
-                className={`mt-6 ${buttonVariants({
-                  variant: tier.featured ? "default" : "outline",
-                })}`}
+                className={
+                  tier.featured
+                    ? "cr-btn cr-btn-primary mt-7 w-full"
+                    : "cr-btn cr-btn-ghost mt-7 w-full"
+                }
               >
                 Start with {tier.name}
               </Link>
@@ -126,10 +163,31 @@ export function LandingPricing() {
           ))}
         </div>
 
-        <p className="mt-8 text-center text-xs text-neutral-500">
+        <p
+          className="mt-10 text-center text-[13px]"
+          style={{ color: "var(--cr-muted)" }}
+        >
           Self-hosted? Creative Review is open source under AGPL-3.0.
         </p>
       </div>
     </section>
+  );
+}
+
+function CheckGlyph() {
+  return (
+    <svg
+      width={16}
+      height={16}
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      style={{ color: "var(--cr-constructive)", flexShrink: 0, marginTop: 2 }}
+    >
+      <path d="M3 8.5 7 12l6-8" />
+    </svg>
   );
 }
