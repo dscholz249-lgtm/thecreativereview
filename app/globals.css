@@ -128,3 +128,228 @@
     @apply font-sans;
   }
 }
+
+/* ─── Creative Review — design system tokens (PR 1 of 3) ──────────────────
+   From Claude Design handoff (docs/design-tokens.md).
+   Coexists with the shadcn block above: shadcn primitives still power the
+   admin UI (dropdowns, dialogs, existing Button) until we port them in
+   PR 2 / 3. All bespoke UI from the redesign uses the `cr-*` classes below.
+   ----------------------------------------------------------------------- */
+:root {
+  --cr-ink: #0A0A0A;
+  --cr-ink-2: #242424;
+  --cr-muted: #5C5C58;
+  --cr-subtle: #8B8B85;
+  --cr-paper: #F5F3EE;
+  --cr-paper-2: #EEECE5;
+  --cr-card: #FFFFFF;
+  --cr-line: #E3E0D6;
+  --cr-line-strong: #C8C4B7;
+
+  --cr-constructive: #0F4C2A;
+  --cr-constructive-soft: #E4EFE8;
+  --cr-destructive-ink: #7A1212;
+  --cr-destructive-soft: #F4E4E4;
+
+  --cr-accent-green: #34D17E;
+  --cr-accent-green-ink: #0B3D22;
+
+  --cr-radius: 8px;
+  --cr-radius-sm: 6px;
+
+  --cr-shadow-card: 0 1px 0 rgba(10, 10, 10, 0.04), 0 2px 0 rgba(10, 10, 10, 0.03);
+  --cr-shadow-raised: 0 2px 0 var(--cr-ink), 0 0 0 1px var(--cr-line);
+}
+
+/* Typography primitives — applied to any element with cr-display / cr-body
+   utility class, and to raw h1–h4 inside a .cr-surface block so we don't
+   interfere with shadcn typography outside the redesign. */
+.cr-surface {
+  font-family: var(--font-body), -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--cr-ink);
+  background: var(--cr-paper);
+  line-height: 1.45;
+  letter-spacing: -0.005em;
+  -webkit-font-smoothing: antialiased;
+}
+.cr-surface h1, .cr-surface h2, .cr-surface h3, .cr-surface h4, .cr-display {
+  font-family: var(--font-display), "Zilla Slab", Georgia, serif;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+  margin: 0;
+  color: var(--cr-ink);
+}
+.cr-surface h1 { font-size: 44px; }
+.cr-surface h2 { font-size: 32px; }
+.cr-surface h3 { font-size: 22px; font-weight: 700; }
+.cr-surface h4 { font-size: 18px; font-weight: 700; }
+.cr-mono { font-family: var(--font-mono), ui-monospace, Menlo, monospace; font-size: 13px; letter-spacing: 0; }
+
+.cr-eyebrow {
+  font-family: var(--font-body), sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--cr-muted);
+}
+
+.cr-link {
+  color: var(--cr-ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  font-weight: 600;
+}
+.cr-link:hover {
+  text-decoration-color: var(--cr-accent-green);
+  text-decoration-thickness: 2px;
+}
+
+/* Buttons — hard offset shadow on primary/constructive/destructive for the
+   "premium" stamp; ghost drops the shadow. Hovers lighten via color-mix. */
+.cr-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: var(--font-body), sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  padding: 12px 22px;
+  border-radius: var(--cr-radius);
+  border: 1.5px solid var(--cr-ink);
+  background: var(--cr-card);
+  color: var(--cr-ink);
+  cursor: pointer;
+  box-shadow: 2px 2px 0 var(--cr-ink);
+  transition: transform 0.08s ease, box-shadow 0.08s ease, background 0.12s;
+  text-decoration: none;
+  white-space: nowrap;
+  line-height: 1;
+}
+.cr-btn:hover { background: var(--cr-paper-2); }
+.cr-btn:active { transform: translate(2px, 2px); box-shadow: 0 0 0 var(--cr-ink); }
+.cr-btn:focus-visible {
+  outline: 2px solid var(--cr-accent-green);
+  outline-offset: 2px;
+}
+.cr-btn:disabled, .cr-btn[aria-disabled="true"] {
+  opacity: 0.5;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.cr-btn-primary { background: var(--cr-ink); color: var(--cr-card); border-color: var(--cr-ink); }
+.cr-btn-primary:hover { background: var(--cr-ink-2); color: var(--cr-card); }
+
+.cr-btn-constructive {
+  background: var(--cr-constructive);
+  color: #F6FBF7;
+  border-color: var(--cr-constructive);
+}
+.cr-btn-constructive:hover {
+  background: color-mix(in srgb, var(--cr-constructive) 72%, white);
+  color: #F6FBF7;
+}
+
+.cr-btn-destructive {
+  background: var(--cr-destructive-ink);
+  color: #FBF6F6;
+  border-color: var(--cr-destructive-ink);
+}
+.cr-btn-destructive:hover {
+  background: color-mix(in srgb, var(--cr-destructive-ink) 72%, white);
+  color: #FBF6F6;
+}
+
+.cr-btn-ghost { border-color: var(--cr-line-strong); box-shadow: none; }
+.cr-btn-ghost:hover { background: var(--cr-paper-2); }
+
+.cr-btn-sm { font-size: 14px; padding: 8px 14px; }
+.cr-btn-lg { font-size: 17px; padding: 14px 26px; }
+
+/* Cards */
+.cr-card {
+  background: var(--cr-card);
+  border: 1px solid var(--cr-line-strong);
+  border-radius: var(--cr-radius);
+  box-shadow: var(--cr-shadow-card);
+}
+.cr-card-raised {
+  background: var(--cr-card);
+  border: 1.5px solid var(--cr-ink);
+  border-radius: var(--cr-radius);
+  box-shadow: 3px 3px 0 var(--cr-ink);
+}
+
+/* Inputs — 1.5px line-strong default, ink + subtle ring on focus. */
+.cr-input, .cr-textarea, .cr-select {
+  font-family: var(--font-body), sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--cr-ink);
+  background: var(--cr-card);
+  border: 1.5px solid var(--cr-line-strong);
+  border-radius: var(--cr-radius);
+  padding: 12px 14px;
+  width: 100%;
+  outline: none;
+  transition: border 0.12s, box-shadow 0.12s;
+}
+.cr-input:focus, .cr-textarea:focus, .cr-select:focus {
+  border-color: var(--cr-ink);
+  box-shadow: 0 0 0 3px rgba(10, 10, 10, 0.08);
+}
+.cr-input::placeholder, .cr-textarea::placeholder {
+  color: var(--cr-subtle);
+  font-weight: 500;
+}
+.cr-textarea { resize: vertical; min-height: 88px; }
+
+/* Badges */
+.cr-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--cr-line-strong);
+  background: var(--cr-card);
+  color: var(--cr-ink);
+  letter-spacing: 0.01em;
+  line-height: 1.2;
+}
+.cr-badge-dot { width: 8px; height: 8px; border-radius: 4px; background: var(--cr-ink); }
+.cr-badge-approved {
+  background: var(--cr-constructive-soft);
+  color: var(--cr-constructive);
+  border-color: var(--cr-constructive);
+}
+.cr-badge-approved .cr-badge-dot { background: var(--cr-constructive); }
+.cr-badge-changes {
+  background: var(--cr-destructive-soft);
+  color: var(--cr-destructive-ink);
+  border-color: var(--cr-destructive-ink);
+}
+.cr-badge-changes .cr-badge-dot { background: var(--cr-destructive-ink); }
+
+/* Logo mark — black square with green hard offset shadow. */
+.cr-logo-mark {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  background: var(--cr-ink);
+  color: var(--cr-card);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display), serif;
+  font-weight: 800;
+  font-size: 14px;
+  box-shadow: 2px 2px 0 var(--cr-accent-green);
+}
