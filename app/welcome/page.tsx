@@ -3,6 +3,7 @@ import { WaitlistNav } from "@/components/landing/waitlist-nav";
 import { WaitlistHero } from "@/components/landing/waitlist-hero";
 import { WaitlistCta } from "@/components/landing/waitlist-cta";
 import { LandingFeatures } from "@/components/landing/features";
+import { LandingHowItWorks } from "@/components/landing/how-it-works";
 import { LandingPricing } from "@/components/landing/pricing";
 import { LandingFooter } from "@/components/landing/footer";
 
@@ -27,6 +28,7 @@ export default function WelcomePage() {
       <main className="flex-1">
         <WaitlistHero />
         <LandingFeatures />
+        <LandingHowItWorks />
         <LandingPricing />
         <WaitlistCta />
       </main>

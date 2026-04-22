@@ -37,7 +37,7 @@ export function AppNav({ workspaceName, userEmail }: NavProps) {
       <div className="mx-auto flex max-w-[1200px] items-center justify-between px-6 py-3 sm:px-10">
         <div className="flex items-center gap-9">
           <Link href="/dashboard" aria-label="Dashboard">
-            <CreativeReviewLogo fontSize={16} withEyebrow={false} />
+            <CreativeReviewLogo fontSize={16} />
           </Link>
           <nav className="flex items-center gap-6">
             {navItems.map((item) => {

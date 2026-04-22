@@ -1,5 +1,3 @@
-import Link from "next/link";
-
 // Pricing tiers. The design bundle didn't include a pricing table — we're
 // keeping the existing tier structure but restyling it in the new language.
 // Claude Design can rework the card treatment in a follow-up; the tier
@@ -149,16 +147,10 @@ export function LandingPricing() {
                   </li>
                 ))}
               </ul>
-              <Link
-                href="/signup"
-                className={
-                  tier.featured
-                    ? "cr-btn cr-btn-primary mt-7 w-full"
-                    : "cr-btn cr-btn-ghost mt-7 w-full"
-                }
-              >
-                Start with {tier.name}
-              </Link>
+              {/* Pricing cards intentionally have no "Start with X" CTA until
+                  the live Stripe price IDs + secret key are swapped on
+                  Railway. Post-launch we'll re-add the button; until then
+                  the waitlist hero/cta are the only signup paths. */}
             </div>
           ))}
         </div>

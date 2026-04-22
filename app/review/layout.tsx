@@ -37,7 +37,7 @@ export default async function ReviewLayout({
             href="/review/my-reviews"
             aria-label="My reviews"
           >
-            <CreativeReviewLogo fontSize={16} withEyebrow={false} />
+            <CreativeReviewLogo fontSize={16} />
           </Link>
           <div className="flex items-center gap-4 text-[14px]">
             <span style={{ color: "var(--cr-muted)" }}>
