@@ -1,9 +1,8 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { PageHeading, LinkButton } from "@/components/page-heading";
-import { Card, CardContent } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
+import { Avatar, avatarVariantFor } from "@/components/cr-avatar";
+import { ArrowRight, Plus } from "@/components/cr-icons";
 
 type ActiveProjectAsset = { id: string; status: string; archived: boolean };
 type ActiveProjectRow = {
@@ -64,135 +63,221 @@ export default async function DashboardPage() {
   ]);
 
   const projects = (activeProjectsData.data ?? []) as unknown as ActiveProjectRow[];
+  const overdue = overdueCount.count ?? 0;
+  const dueThisWeekCount = projects.filter((p) => {
+    if (!p.deadline) return false;
+    const d = new Date(p.deadline).getTime();
+    return d >= now && d <= now + 7 * 86_400_000;
+  }).length;
 
   return (
     <>
       <PageHeading
         title="Dashboard"
         description="Everything on your plate across clients and projects."
-        actions={<LinkButton href="/clients">New asset →</LinkButton>}
+        actions={
+          <LinkButton href="/clients">
+            <Plus /> New asset
+          </LinkButton>
+        }
       />
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <MetricCard label="Pending review" value={pendingCount.count ?? 0} />
-        <MetricCard
-          label="Overdue"
-          value={overdueCount.count ?? 0}
-          tone={(overdueCount.count ?? 0) > 0 ? "alert" : "default"}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <StatTile
+          label="Pending review"
+          value={pendingCount.count ?? 0}
+          sub={
+            overdue > 0
+              ? `${overdue} overdue, ${(pendingCount.count ?? 0) - overdue} on track`
+              : "All on track"
+          }
+          featured
         />
-        <MetricCard
+        <StatTile
+          label="Overdue"
+          value={overdue}
+          valueColor="var(--cr-destructive-ink)"
+          sub={overdue > 0 ? "Action needed" : "Nothing overdue"}
+        />
+        <StatTile
           label="Approved this week"
           value={approvedThisWeekCount.count ?? 0}
+          valueColor="var(--cr-constructive)"
+          sub="Last 7 days"
         />
-        <MetricCard label="Active projects" value={activeProjectsCount.count ?? 0} />
+        <StatTile
+          label="Active projects"
+          value={activeProjectsCount.count ?? 0}
+          sub={
+            projects.length > 0
+              ? `Across ${new Set(projects.map((p) => p.clients?.name).filter(Boolean)).size} clients`
+              : "None yet"
+          }
+        />
       </div>
 
-      <div className="mt-8">
-        <div className="mb-3 flex items-end justify-between">
-          <h2 className="text-sm font-semibold">Active projects</h2>
-          <span className="text-xs text-neutral-500">
-            {projects.length} {projects.length === 1 ? "project" : "projects"}
-          </span>
+      <div className="mt-10 mb-4 flex items-center">
+        <h3
+          className="cr-display"
+          style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-0.01em" }}
+        >
+          Active projects
+        </h3>
+        <span className="flex-1" />
+        <span className="text-[14px]" style={{ color: "var(--cr-muted)" }}>
+          {projects.length} {projects.length === 1 ? "project" : "projects"}
+          {dueThisWeekCount > 0 ? ` · ${dueThisWeekCount} due this week` : ""}
+        </span>
+      </div>
+
+      {projects.length === 0 ? (
+        <EmptyState
+          body="No active projects yet."
+          ctaHref="/clients"
+          ctaLabel="Create a client"
+        />
+      ) : (
+        <div className="flex flex-col gap-3">
+          {projects.map((p) => {
+            const active = p.assets.filter((a) => !a.archived);
+            const approved = active.filter((a) => a.status === "approved").length;
+            const pending = active.filter((a) => a.status === "pending").length;
+            const isOverdue = p.deadline ? p.deadline < today : false;
+            const clientName = p.clients?.name ?? "—";
+            return (
+              <Link
+                key={p.id}
+                href={`/projects/${p.id}`}
+                className="cr-card flex items-center gap-5 p-6 transition-colors hover:border-[var(--cr-line-strong)]"
+              >
+                <Avatar
+                  label={clientName}
+                  variant={avatarVariantFor(clientName)}
+                />
+                <div className="min-w-0" style={{ width: 240 }}>
+                  <div
+                    className="text-[13px] font-semibold uppercase tracking-[0.04em]"
+                    style={{ color: "var(--cr-muted)" }}
+                  >
+                    {clientName}
+                  </div>
+                  <div
+                    className="truncate"
+                    style={{
+                      fontFamily: "var(--font-display), serif",
+                      fontWeight: 700,
+                      fontSize: 20,
+                      letterSpacing: "-0.01em",
+                    }}
+                  >
+                    {p.name}
+                  </div>
+                </div>
+                <span className="flex-1" />
+                <div
+                  className="text-right text-[14px]"
+                  style={{ color: "var(--cr-muted)", minWidth: 140 }}
+                >
+                  {active.length} {active.length === 1 ? "asset" : "assets"}
+                  {" · "}
+                  {pending} pending
+                  {approved > 0 ? `, ${approved} approved` : ""}
+                </div>
+                <span
+                  className="cr-badge"
+                  style={{ minWidth: 112, justifyContent: "center" }}
+                >
+                  <span
+                    className="cr-badge-dot"
+                    style={{
+                      background: isOverdue
+                        ? "var(--cr-destructive-ink)"
+                        : "var(--cr-constructive)",
+                    }}
+                  />
+                  {p.deadline ? `Due ${formatShortDate(p.deadline)}` : "No deadline"}
+                </span>
+                <span className="cr-btn cr-btn-sm cr-btn-ghost">
+                  Open <ArrowRight size={14} />
+                </span>
+              </Link>
+            );
+          })}
         </div>
-
-        {projects.length === 0 ? (
-          <Card>
-            <CardContent className="py-12 text-center text-sm text-neutral-600">
-              No active projects yet.{" "}
-              <Link href="/clients" className="font-medium underline">
-                Create a client
-              </Link>{" "}
-              to get started.
-            </CardContent>
-          </Card>
-        ) : (
-          <Card>
-            <CardContent className="p-0">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b bg-neutral-50 text-xs uppercase tracking-wide text-neutral-500">
-                    <th className="px-4 py-3 text-left font-medium">Project</th>
-                    <th className="px-4 py-3 text-left font-medium">Client</th>
-                    <th className="px-4 py-3 text-left font-medium">Progress</th>
-                    <th className="px-4 py-3 text-left font-medium">Deadline</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {projects.map((p) => {
-                    const active = p.assets.filter((a) => !a.archived);
-                    const approved = active.filter((a) => a.status === "approved").length;
-                    const total = active.length;
-                    const pct = total === 0 ? 0 : Math.round((approved / total) * 100);
-                    const overdue = p.deadline ? p.deadline < today : false;
-                    return (
-                      <tr key={p.id} className="border-b last:border-0 hover:bg-neutral-50">
-                        <td className="px-4 py-3">
-                          <Link
-                            href={`/projects/${p.id}`}
-                            className="font-medium hover:underline"
-                          >
-                            {p.name}
-                          </Link>
-                        </td>
-                        <td className="px-4 py-3 text-neutral-600">
-                          {p.clients?.name ?? "—"}
-                        </td>
-                        <td className="px-4 py-3">
-                          <Progress value={pct} className="h-1.5 w-40" />
-                          <p className="mt-1 text-xs text-neutral-500">
-                            {approved} / {total} approved
-                          </p>
-                        </td>
-                        <td className="px-4 py-3">
-                          {p.deadline ? (
-                            <span
-                              className={
-                                overdue
-                                  ? "text-red-700 font-medium"
-                                  : "text-neutral-700"
-                              }
-                            >
-                              {p.deadline}
-                            </span>
-                          ) : (
-                            <span className="text-neutral-400">—</span>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </CardContent>
-          </Card>
-        )}
-      </div>
+      )}
     </>
   );
 }
 
-function MetricCard({
+function StatTile({
   label,
   value,
-  tone = "default",
+  sub,
+  valueColor = "var(--cr-ink)",
+  featured = false,
 }: {
   label: string;
   value: number;
-  tone?: "default" | "alert";
+  sub?: string;
+  valueColor?: string;
+  featured?: boolean;
 }) {
   return (
-    <Card>
-      <CardContent className="py-5">
-        <p className="text-xs text-neutral-600">{label}</p>
-        <p
-          className={`mt-2 text-3xl font-semibold ${tone === "alert" ? "text-red-700" : "text-neutral-900"}`}
+    <div
+      className={featured ? "cr-card-raised" : "cr-card"}
+      style={{ padding: "20px 22px 22px" }}
+    >
+      <div className="flex flex-col gap-2.5">
+        <span
+          className="text-[13px] font-bold uppercase tracking-[0.08em]"
+          style={{ color: "var(--cr-muted)" }}
+        >
+          {label}
+        </span>
+        <span
+          style={{
+            fontFamily: "var(--font-display), serif",
+            fontWeight: 800,
+            fontSize: 56,
+            lineHeight: 1,
+            letterSpacing: "-0.03em",
+            color: valueColor,
+          }}
         >
           {value}
-        </p>
-      </CardContent>
-    </Card>
+        </span>
+        {sub ? (
+          <span className="text-[13px]" style={{ color: "var(--cr-muted)" }}>
+            {sub}
+          </span>
+        ) : null}
+      </div>
+    </div>
   );
 }
 
-// Status pill helper (unused here, kept for nearby reuse).
-void Badge;
+function EmptyState({
+  body,
+  ctaHref,
+  ctaLabel,
+}: {
+  body: string;
+  ctaHref: string;
+  ctaLabel: string;
+}) {
+  return (
+    <div className="cr-card flex flex-col items-center gap-3 py-12">
+      <p className="text-[15px]" style={{ color: "var(--cr-muted)" }}>
+        {body}
+      </p>
+      <Link href={ctaHref} className="cr-btn cr-btn-sm">
+        {ctaLabel}
+      </Link>
+    </div>
+  );
+}
+
+function formatShortDate(iso: string): string {
+  const d = new Date(iso);
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}

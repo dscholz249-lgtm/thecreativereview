@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useTransition } from "react";
 import {
   DropdownMenu,
@@ -9,7 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
+import { Chevron } from "@/components/cr-icons";
 import { logout } from "@/app/(auth)/actions";
 
 type NavProps = {
@@ -18,43 +19,90 @@ type NavProps = {
 };
 
 const navItems = [
-  { href: "/dashboard", label: "Dashboard" },
-  { href: "/clients", label: "Clients" },
+  { href: "/dashboard", label: "Dashboard", prefix: "/dashboard" },
+  { href: "/clients", label: "Clients", prefix: "/clients" },
+  { href: "/projects", label: "Reviews", prefix: "/projects" },
 ];
 
 export function AppNav({ workspaceName, userEmail }: NavProps) {
+  const pathname = usePathname();
   const [, startTransition] = useTransition();
 
   return (
-    <header className="flex items-center justify-between border-b border-neutral-200 bg-white px-6 py-3">
-      <div className="flex items-center gap-8">
-        <Link href="/dashboard" className="text-sm font-semibold tracking-tight">
-          Creative Review
-        </Link>
-        <nav className="flex items-center gap-5 text-sm text-neutral-600">
-          {navItems.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="hover:text-neutral-900 transition-colors"
+    <header
+      className="sticky top-0 z-20 bg-[var(--cr-card)]"
+      style={{ borderBottom: "2px solid var(--cr-ink)" }}
+    >
+      <div className="mx-auto flex max-w-[1200px] items-center justify-between px-6 py-4 sm:px-10">
+        <div className="flex items-center gap-9">
+          <Link href="/dashboard" className="flex items-center gap-2.5">
+            <span className="cr-logo-mark">CR</span>
+            <span
+              className="text-[20px] font-extrabold tracking-tight"
+              style={{ fontFamily: "var(--font-display), serif" }}
             >
-              {item.label}
-            </Link>
-          ))}
-        </nav>
-      </div>
+              Creative Review
+            </span>
+          </Link>
+          <nav className="flex items-center gap-6">
+            {navItems.map((item) => {
+              const active =
+                pathname === item.href || pathname?.startsWith(item.prefix + "/");
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className="py-1.5 text-[16px] font-semibold transition-colors"
+                  style={{
+                    color: active ? "var(--cr-ink)" : "var(--cr-muted)",
+                    borderBottom: active
+                      ? "2px solid var(--cr-ink)"
+                      : "2px solid transparent",
+                    // Negative bottom margin so the underline sits on the
+                    // 2px topbar rule rather than hovering above it.
+                    marginBottom: -18,
+                    paddingBottom: 16,
+                  }}
+                >
+                  {item.label}
+                </Link>
+              );
+            })}
+          </nav>
+        </div>
 
-      <div className="flex items-center gap-3">
         <DropdownMenu>
           <DropdownMenuTrigger
-            render={<Button variant="outline" size="sm" className="gap-2" />}
+            render={
+              <button
+                type="button"
+                className="flex cursor-pointer items-center gap-2.5 px-3.5 py-2 text-[15px] font-semibold"
+                style={{
+                  background: "var(--cr-card)",
+                  border: "1.5px solid var(--cr-ink)",
+                  borderRadius: "var(--cr-radius)",
+                  boxShadow: "2px 2px 0 var(--cr-ink)",
+                  color: "var(--cr-ink)",
+                }}
+              />
+            }
           >
-            <span className="max-w-[180px] truncate">{workspaceName}</span>
-            <span aria-hidden className="text-neutral-400">▾</span>
+            <span
+              aria-hidden
+              className="inline-block size-[18px] rounded"
+              style={{ background: "var(--cr-ink)" }}
+            />
+            <span className="max-w-[200px] truncate">{workspaceName}</span>
+            <Chevron />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="min-w-56">
             <DropdownMenuItem disabled className="flex-col items-start">
-              <span className="text-xs text-neutral-500">Signed in as</span>
+              <span
+                className="text-[11px] font-bold uppercase tracking-[0.08em]"
+                style={{ color: "var(--cr-muted)" }}
+              >
+                Signed in as
+              </span>
               <span className="text-sm">{userEmail}</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
