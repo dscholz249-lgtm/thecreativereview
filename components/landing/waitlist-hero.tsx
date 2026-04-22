@@ -1,9 +1,14 @@
 import { WaitlistForm } from "./waitlist-form";
+import { ProductPreview } from "./product-preview";
 
 // Hero with an inline waitlist form. Same display hierarchy as the live
 // landing's hero (big slab headline → subcopy → CTA) but the CTA pair
 // is replaced with the waitlist form itself so interested visitors can
 // drop their details without scrolling.
+//
+// The ProductPreview card is shared with LandingHero — pre-launch
+// visitors see the same mock review workspace so the pitch matches
+// what the product actually does.
 export function WaitlistHero() {
   return (
     <section
@@ -26,9 +31,7 @@ export function WaitlistHero() {
           >
             Ship the work.
             <br />
-            <span style={{ color: "var(--cr-muted)" }}>Skip the</span> email
-            <br />
-            thread.
+            <span style={{ color: "var(--cr-muted)" }}>Skip the</span> email thread.
           </h1>
           <p
             className="mt-7 max-w-[560px] text-[18px] leading-[1.5] sm:text-[20px]"
@@ -61,6 +64,10 @@ export function WaitlistHero() {
           </h2>
           <WaitlistForm />
         </div>
+      </div>
+
+      <div className="mt-16">
+        <ProductPreview />
       </div>
     </section>
   );
