@@ -27,7 +27,7 @@ export function AuthSplitShell({
       >
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3 sm:px-10">
           <Link href="/" aria-label="The Creative Review — home">
-            <CreativeReviewLogo fontSize={16} withEyebrow={false} />
+            <CreativeReviewLogo fontSize={16} />
           </Link>
         </div>
       </header>

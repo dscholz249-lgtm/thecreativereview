@@ -12,7 +12,7 @@ export function LandingNav() {
     >
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3 sm:px-10">
         <Link href="/" aria-label="The Creative Review — home">
-          <CreativeReviewLogo fontSize={16} withEyebrow={false} />
+          <CreativeReviewLogo fontSize={16} />
         </Link>
         <nav className="flex items-center gap-5 sm:gap-7">
           <Link

@@ -36,7 +36,10 @@ export function CreativeReviewLogo({
   const dark = variant === "dark";
 
   // Wordmark stack height = eyebrow row + gap + two wordmark lines.
-  const eyebrowSize = fontSize * 0.3;
+  // Clamp eyebrow size to 11px minimum so the brand's "The" stays
+  // readable in compact nav lockups (fontSize 16 × 0.3 = 4.8px is
+  // illegible). Hero sizes (fontSize 72+) are unaffected.
+  const eyebrowSize = Math.max(fontSize * 0.3, 11);
   const eyebrowGap = 4;
   const stackH =
     (withEyebrow ? eyebrowSize + eyebrowGap : 0) + fontSize * 0.95 * 2;
