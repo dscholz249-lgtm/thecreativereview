@@ -1,7 +1,6 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -11,6 +10,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Check } from "@/components/cr-icons";
 import { approveDecisionAction, type ActionResult } from "./actions";
 
 export function ApproveButton({
@@ -29,13 +29,30 @@ export function ApproveButton({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button className="w-full" />}>
-        Approve
+      <DialogTrigger
+        render={
+          <button
+            type="button"
+            className="cr-btn cr-btn-constructive cr-btn-lg"
+            style={{ width: "100%" }}
+          />
+        }
+      >
+        <Check /> Approve
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Approve this asset exactly as is?</DialogTitle>
-          <DialogDescription>
+          <DialogTitle
+            style={{
+              fontFamily: "var(--font-display), serif",
+              fontWeight: 800,
+              fontSize: 22,
+              letterSpacing: "-0.01em",
+            }}
+          >
+            Approve this asset exactly as is?
+          </DialogTitle>
+          <DialogDescription style={{ color: "var(--cr-muted)" }}>
             Your approval means no changes are needed. To leave notes, cancel
             and pick &ldquo;Request changes&rdquo; instead.
           </DialogDescription>
@@ -44,20 +61,29 @@ export function ApproveButton({
           <input type="hidden" name="asset_id" value={assetId} />
           <input type="hidden" name="asset_version_id" value={versionId} />
           {err?.error ? (
-            <p className="text-xs text-red-600 mb-2">{err.error}</p>
+            <p
+              className="mb-2 text-[13px] font-semibold"
+              style={{ color: "var(--cr-destructive-ink)" }}
+            >
+              {err.error}
+            </p>
           ) : null}
           <DialogFooter>
-            <Button
+            <button
               type="button"
-              variant="outline"
+              className="cr-btn cr-btn-ghost"
               onClick={() => setOpen(false)}
               disabled={pending}
             >
               Cancel
-            </Button>
-            <Button type="submit" disabled={pending}>
-              {pending ? "Approving…" : "Yes, approve"}
-            </Button>
+            </button>
+            <button
+              type="submit"
+              className="cr-btn cr-btn-constructive"
+              disabled={pending}
+            >
+              <Check /> {pending ? "Approving…" : "Yes, approve"}
+            </button>
           </DialogFooter>
         </form>
       </DialogContent>

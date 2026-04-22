@@ -1,10 +1,8 @@
 "use client";
 
 import { useActionState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/form-field";
+import { ArrowRight } from "@/components/cr-icons";
 import { inviteReviewerAction, type ActionResult } from "./actions";
 
 export function InviteReviewerForm({ clientId }: { clientId: string }) {
@@ -16,36 +14,60 @@ export function InviteReviewerForm({ clientId }: { clientId: string }) {
   const success = state?.ok ? state.message : null;
 
   return (
-    <Card>
-      <CardContent className="py-6">
-        <form action={action} className="flex flex-col gap-4">
-          <input type="hidden" name="client_id" value={clientId} />
-          <FormField label="Email" name="email" error={err?.fieldErrors?.email}>
-            <Input
-              id="email"
-              name="email"
-              type="email"
-              required
-              placeholder="reviewer@client.com"
-            />
-          </FormField>
-          <FormField
-            label="Name"
+    <div className="cr-card-raised p-6">
+      <form action={action}>
+        <input type="hidden" name="client_id" value={clientId} />
+
+        <FormField label="Email" name="email" error={err?.fieldErrors?.email}>
+          <input
+            id="email"
+            name="email"
+            type="email"
+            required
+            placeholder="reviewer@client.com"
+            className="cr-input"
+          />
+        </FormField>
+
+        <FormField
+          label="Name"
+          name="name"
+          hint="Optional. Shown on emails and decision attribution."
+          error={err?.fieldErrors?.name}
+        >
+          <input
+            id="name"
             name="name"
-            hint="Optional. Shown on emails and decision attribution."
-            error={err?.fieldErrors?.name}
+            placeholder="Jane Doe"
+            className="cr-input"
+          />
+        </FormField>
+
+        {err?.error ? (
+          <p
+            className="mb-3 text-[13px] font-semibold"
+            style={{ color: "var(--cr-destructive-ink)" }}
           >
-            <Input id="name" name="name" placeholder="Jane Doe" />
-          </FormField>
-          {err?.error ? <p className="text-xs text-red-600">{err.error}</p> : null}
-          {success ? (
-            <p className="text-xs text-green-700">{success}</p>
-          ) : null}
-          <Button type="submit" disabled={pending}>
-            {pending ? "Sending…" : "Send invite"}
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
+            {err.error}
+          </p>
+        ) : null}
+        {success ? (
+          <p
+            className="mb-3 text-[13px] font-semibold"
+            style={{ color: "var(--cr-constructive)" }}
+          >
+            {success}
+          </p>
+        ) : null}
+
+        <button
+          type="submit"
+          disabled={pending}
+          className="cr-btn cr-btn-primary w-full"
+        >
+          {pending ? "Sending…" : "Send invite"} <ArrowRight size={14} />
+        </button>
+      </form>
+    </div>
   );
 }

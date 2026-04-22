@@ -20,7 +20,7 @@ export default async function NewAssetPage({
   const client = project.clients as { id: string; name: string } | null;
 
   return (
-    <div className="max-w-xl">
+    <div className="max-w-[720px]">
       <PageHeading
         title="New asset"
         breadcrumbs={[
@@ -30,7 +30,7 @@ export default async function NewAssetPage({
           { label: "New asset" },
         ]}
       />
-      <NewAssetForm projectId={project.id} />
+      <NewAssetForm projectId={project.id} cancelHref={`/projects/${project.id}`} />
     </div>
   );
 }

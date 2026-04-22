@@ -2,9 +2,8 @@
 
 import Link from "next/link";
 import { useState, useTransition } from "react";
-import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
 import { Annotator, clearAnnotatorDraft } from "@/components/annotator";
+import { X } from "@/components/cr-icons";
 import { rejectDecisionAction } from "../actions";
 
 type DraftPin = {
@@ -82,15 +81,16 @@ export function RequestChangesForm({
             onChange={setPins}
           />
           <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-neutral-500">
+            <label className="cr-eyebrow mb-2 block">
               Overall feedback (optional)
             </label>
-            <Textarea
+            <textarea
               placeholder="Anything else to add beyond the pins?"
               value={generalFeedback}
               onChange={(e) => setGeneralFeedback(e.target.value)}
               rows={3}
               maxLength={4000}
+              className="cr-textarea"
             />
           </div>
         </>
@@ -101,16 +101,14 @@ export function RequestChangesForm({
               href={nonImageFallbackUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="rounded-md border border-neutral-200 bg-white p-3 text-sm text-blue-700 underline"
+              className="cr-card cr-link p-4 text-[14px]"
             >
-              Open {assetName} in a new tab
+              Open {assetName} in a new tab ↗
             </a>
           ) : null}
-          <label className="block">
-            <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-neutral-500">
-              Your feedback
-            </span>
-            <Textarea
+          <label>
+            <span className="cr-eyebrow mb-2 block">Your feedback</span>
+            <textarea
               placeholder="What needs to change? (At least 3 characters.)"
               value={generalFeedback}
               onChange={(e) => setGeneralFeedback(e.target.value)}
@@ -118,31 +116,50 @@ export function RequestChangesForm({
               required
               minLength={3}
               maxLength={4000}
+              className="cr-textarea"
             />
           </label>
         </div>
       )}
 
-      {error ? <p className="text-sm text-red-600">{error}</p> : null}
+      {error ? (
+        <p
+          className="text-[14px] font-semibold"
+          style={{ color: "var(--cr-destructive-ink)" }}
+        >
+          {error}
+        </p>
+      ) : null}
 
-      <div className="sticky bottom-0 flex items-center justify-between gap-3 border-t border-neutral-200 bg-neutral-50 py-3">
-        <p className="text-xs text-neutral-500">
+      <div
+        className="sticky bottom-0 flex items-center justify-between gap-3 py-4"
+        style={{
+          borderTop: "1px solid var(--cr-line)",
+          background: "var(--cr-paper)",
+        }}
+      >
+        <p className="text-[13px]" style={{ color: "var(--cr-muted)" }}>
           {flow === "image"
             ? readyAnnotations.length > 0
               ? `${readyAnnotations.length} pin${readyAnnotations.length === 1 ? "" : "s"} ready`
               : "Add at least one pin to describe what needs to change."
             : "Minimum 3 characters."}
         </p>
-        <div className="flex gap-2">
+        <div className="flex gap-2.5">
           <Link
             href={`/review/assets/${assetId}`}
-            className="inline-flex items-center rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-sm font-medium text-neutral-800 hover:bg-neutral-100"
+            className="cr-btn cr-btn-sm cr-btn-ghost"
           >
             Back
           </Link>
-          <Button type="submit" disabled={!canSubmit || pending}>
+          <button
+            type="submit"
+            disabled={!canSubmit || pending}
+            className="cr-btn cr-btn-sm cr-btn-destructive"
+          >
+            <X size={14} />{" "}
             {pending ? "Submitting…" : "Submit changes requested"}
-          </Button>
+          </button>
         </div>
       </div>
     </form>

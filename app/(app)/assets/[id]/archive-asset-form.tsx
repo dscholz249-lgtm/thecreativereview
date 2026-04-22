@@ -1,13 +1,13 @@
-import { Button } from "@/components/ui/button";
+import { Archive } from "@/components/cr-icons";
 import { archiveAssetAction } from "@/app/(app)/assets/actions";
 
 export function ArchiveAssetForm({ assetId }: { assetId: string }) {
   return (
     <form action={archiveAssetAction}>
       <input type="hidden" name="id" value={assetId} />
-      <Button type="submit" variant="outline" size="sm">
-        Archive
-      </Button>
+      <button type="submit" className="cr-btn cr-btn-sm cr-btn-ghost">
+        <Archive size={14} /> Archive
+      </button>
     </form>
   );
 }

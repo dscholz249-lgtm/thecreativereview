@@ -2,10 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createSignedUrl } from "@/lib/supabase/storage";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { buttonVariants } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { File as FileIcon, X } from "@/components/cr-icons";
 import { ApproveButton } from "./approve-button";
 
 export default async function ReviewerAssetPage({
@@ -48,112 +45,155 @@ export default async function ReviewerAssetPage({
 
   const project = asset.projects as { id: string; name: string } | null;
   const isDecided = asset.status === "approved" || asset.status === "rejected";
+  const imageRenderable = isImagePreview(asset.type, version.storage_path);
 
   return (
-    <>
-      <header className="mb-5">
-        <Link
-          href="/review/my-reviews"
-          className="text-xs text-neutral-500 hover:text-neutral-800"
-        >
-          ← My reviews
-        </Link>
-        <h1 className="mt-2 text-2xl font-semibold tracking-tight">{asset.name}</h1>
-        <p className="mt-1 text-sm text-neutral-600">
-          {project?.name ?? "—"} · v{version.version_number}
-        </p>
-      </header>
+    <div className="mx-auto max-w-[1240px]">
+      <Link
+        href="/review/my-reviews"
+        className="cr-link mb-4 inline-block text-[14px]"
+      >
+        ← My reviews
+      </Link>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
-        <section>
-          <Card className="overflow-hidden">
-            <CardContent className="flex aspect-[4/3] items-center justify-center bg-neutral-100 p-0">
-              {previewUrl ? (
-                isImagePreview(asset.type, version.storage_path) ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={previewUrl}
-                    alt={asset.name}
-                    className="h-full w-full object-contain"
-                  />
-                ) : (
-                  <a
-                    href={previewUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm text-blue-700 underline"
-                  >
-                    Open {asset.type} in a new tab
-                  </a>
-                )
-              ) : (
-                <span className="text-sm text-neutral-500">No preview available</span>
-              )}
-            </CardContent>
-          </Card>
-        </section>
+      <div className="mb-8 flex flex-wrap items-end justify-between gap-5">
+        <div>
+          <p className="cr-eyebrow mb-2">
+            {project?.name ?? "—"} · v{version.version_number}
+          </p>
+          <h1
+            className="cr-display"
+            style={{
+              fontFamily: "var(--font-display), serif",
+              fontWeight: 800,
+              fontSize: 48,
+              letterSpacing: "-0.02em",
+            }}
+          >
+            {asset.name}
+          </h1>
+        </div>
+        <StatusBadge status={asset.status} />
+      </div>
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_400px]">
+        <div
+          className="cr-card-raised"
+          style={{ padding: 24, background: "var(--cr-paper-2)" }}
+        >
+          {previewUrl && imageRenderable ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={previewUrl}
+              alt={asset.name}
+              className="h-full w-full object-contain"
+              style={{
+                borderRadius: "var(--cr-radius)",
+                border: "1px solid var(--cr-line)",
+                background: "var(--cr-card)",
+              }}
+            />
+          ) : previewUrl ? (
+            <div
+              className="flex flex-col items-center justify-center gap-3 py-16 text-center"
+              style={{
+                border: "1px dashed var(--cr-line-strong)",
+                borderRadius: "var(--cr-radius)",
+                background: "var(--cr-card)",
+                aspectRatio: "8.5 / 11",
+                width: "100%",
+              }}
+            >
+              <FileIcon size={32} />
+              <span
+                className="text-[14px] font-semibold"
+                style={{ color: "var(--cr-ink)" }}
+              >
+                {asset.name}
+              </span>
+              <a
+                href={previewUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="cr-btn cr-btn-sm"
+              >
+                Open in new tab
+              </a>
+              <div
+                className="mt-1 text-[12px]"
+                style={{ color: "var(--cr-muted)" }}
+              >
+                PDFs are text-only feedback. Add your note below.
+              </div>
+            </div>
+          ) : (
+            <div
+              className="py-16 text-center text-[14px]"
+              style={{ color: "var(--cr-muted)" }}
+            >
+              No preview available
+            </div>
+          )}
+        </div>
 
         <aside className="flex flex-col gap-4">
           {version.upload_note ? (
-            <Card>
-              <CardContent className="py-4">
-                <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
-                  Note from the team
-                </p>
-                <p className="mt-2 text-sm text-neutral-800">{version.upload_note}</p>
-              </CardContent>
-            </Card>
+            <div className="cr-card p-5">
+              <p className="cr-eyebrow mb-2">Note from the team</p>
+              <p className="text-[16px]" style={{ color: "var(--cr-ink)" }}>
+                {version.upload_note}
+              </p>
+            </div>
           ) : null}
 
-          <Card>
-            <CardContent className="py-4 text-xs text-neutral-600">
-              <p>
-                <span className="font-medium text-neutral-800">Type:</span>{" "}
-                {asset.type}
-              </p>
-              <p className="mt-1">
-                <span className="font-medium text-neutral-800">Version:</span> v
-                {version.version_number}
-              </p>
-              <p className="mt-1">
-                <span className="font-medium text-neutral-800">Uploaded:</span>{" "}
-                {new Date(version.uploaded_at).toLocaleString()}
-              </p>
+          <div className="cr-card p-5">
+            <div className="flex flex-col gap-2">
+              <MetaRow label="Type" value={asset.type} />
+              <MetaRow label="Version" value={`v${version.version_number}`} />
+              <MetaRow
+                label="Uploaded"
+                value={new Date(version.uploaded_at).toLocaleDateString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                  hour: "numeric",
+                  minute: "2-digit",
+                })}
+              />
               {asset.deadline ? (
-                <p className="mt-1">
-                  <span className="font-medium text-neutral-800">Deadline:</span>{" "}
-                  {asset.deadline}
-                </p>
+                <MetaRow
+                  label="Deadline"
+                  value={formatShortDate(asset.deadline)}
+                  valueStyle={{ color: "var(--cr-destructive-ink)" }}
+                />
               ) : null}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
           {isDecided ? (
-            <Card>
-              <CardContent className="py-4">
-                <div className="flex items-center gap-2">
-                  <Badge
-                    variant={asset.status === "approved" ? "default" : "destructive"}
-                  >
-                    {asset.status === "approved" ? "Approved" : "Changes requested"}
-                  </Badge>
-                </div>
-                <p className="mt-2 text-xs text-neutral-600">
-                  This version has a decision. New versions from the team will
-                  show up on your inbox.
-                </p>
-              </CardContent>
-            </Card>
+            <div className="cr-card p-5">
+              <StatusBadge status={asset.status} />
+              <p
+                className="mt-3 text-[13px]"
+                style={{ color: "var(--cr-muted)" }}
+              >
+                This version has a decision. New versions from the team will
+                show up on your inbox.
+              </p>
+            </div>
           ) : (
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col" style={{ gap: 20 }}>
               <ApproveButton assetId={asset.id} versionId={version.id} />
               <Link
                 href={`/review/assets/${asset.id}/request-changes`}
-                className={cn(buttonVariants({ variant: "outline" }))}
+                className="cr-btn cr-btn-destructive cr-btn-lg"
+                style={{ width: "100%" }}
               >
-                Request changes
+                <X /> Request changes
               </Link>
-              <p className="text-xs text-neutral-500 text-center">
+              <p
+                className="text-[13px]"
+                style={{ color: "var(--cr-muted)", lineHeight: 1.5 }}
+              >
                 Approving means no changes are needed. If you want to leave
                 notes, choose &ldquo;Request changes&rdquo; instead.
               </p>
@@ -161,24 +201,79 @@ export default async function ReviewerAssetPage({
           )}
         </aside>
       </div>
-    </>
+    </div>
+  );
+}
+
+function MetaRow({
+  label,
+  value,
+  valueStyle,
+}: {
+  label: string;
+  value: string;
+  valueStyle?: React.CSSProperties;
+}) {
+  return (
+    <div className="flex items-center justify-between text-[14px]">
+      <span style={{ color: "var(--cr-muted)" }}>{label}</span>
+      <span style={{ fontWeight: 600, color: "var(--cr-ink)", ...valueStyle }}>
+        {value}
+      </span>
+    </div>
+  );
+}
+
+function StatusBadge({ status }: { status: string }) {
+  if (status === "approved") {
+    return (
+      <span
+        className="cr-badge cr-badge-approved"
+        style={{ fontSize: 14, padding: "6px 12px" }}
+      >
+        <span className="cr-badge-dot" />
+        Approved
+      </span>
+    );
+  }
+  if (status === "rejected" || status === "revision_submitted") {
+    return (
+      <span
+        className="cr-badge cr-badge-changes"
+        style={{ fontSize: 14, padding: "6px 12px" }}
+      >
+        <span className="cr-badge-dot" />
+        {status === "rejected" ? "Changes requested" : "Revision submitted"}
+      </span>
+    );
+  }
+  return (
+    <span
+      className="cr-badge"
+      style={{ fontSize: 14, padding: "6px 12px" }}
+    >
+      <span className="cr-badge-dot" />
+      Pending your review
+    </span>
   );
 }
 
 function EmptyState({ children }: { children: React.ReactNode }) {
   return (
-    <Card>
-      <CardContent className="py-12 text-center text-sm text-neutral-600">
+    <div className="cr-card flex flex-col items-center gap-2 py-14 text-center">
+      <p className="text-[15px]" style={{ color: "var(--cr-muted)" }}>
         {children}
-      </CardContent>
-    </Card>
+      </p>
+    </div>
   );
 }
 
-function isImagePreview(
-  type: string,
-  storagePath: string | null,
-): boolean {
+function isImagePreview(type: string, storagePath: string | null): boolean {
   if (!storagePath) return false;
   return type === "image" || type === "design" || type === "wireframe";
+}
+
+function formatShortDate(iso: string): string {
+  const d = new Date(iso);
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }

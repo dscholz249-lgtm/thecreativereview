@@ -2,8 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { PageHeading, LinkButton } from "@/components/page-heading";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { ArrowRight, Plus } from "@/components/cr-icons";
 import { RemindReviewersButton } from "./remind-reviewers-button";
 
 export default async function ProjectDetailPage({
@@ -55,51 +54,89 @@ export default async function ProjectDetailPage({
                   : null
               }
             />
-            <LinkButton href={`/projects/${id}/assets/new`}>New asset</LinkButton>
+            <LinkButton href={`/projects/${id}/assets/new`}>
+              <Plus /> New asset
+            </LinkButton>
           </>
         }
       />
 
-      <div className="mb-6 flex items-center gap-3 text-xs text-neutral-600">
-        <Badge variant="secondary">{project.status}</Badge>
-        {project.deadline ? <span>Deadline {project.deadline}</span> : null}
+      <div className="mb-7 flex flex-wrap items-center gap-3">
+        <ProjectStatusBadge status={project.status} />
+        {project.deadline ? (
+          <span
+            className="text-[14px]"
+            style={{ color: "var(--cr-muted)" }}
+          >
+            Deadline {formatShortDate(project.deadline)}
+          </span>
+        ) : null}
       </div>
 
-      <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-neutral-500">
-        Assets
-      </h2>
+      <div className="mb-4 flex items-center">
+        <h3
+          className="cr-display"
+          style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-0.01em" }}
+        >
+          Assets
+        </h3>
+        <span className="flex-1" />
+        <span className="text-[14px]" style={{ color: "var(--cr-muted)" }}>
+          {(assets ?? []).length} {(assets ?? []).length === 1 ? "asset" : "assets"}
+        </span>
+      </div>
 
       {!assets || assets.length === 0 ? (
-        <Card>
-          <CardContent className="py-12 text-center text-sm text-neutral-600">
-            No assets yet.{" "}
-            <Link
-              href={`/projects/${id}/assets/new`}
-              className="font-medium underline"
-            >
-              Upload the first one
-            </Link>
-            .
-          </CardContent>
-        </Card>
+        <div className="cr-card flex flex-col items-center gap-3 py-14 text-center">
+          <p className="text-[15px]" style={{ color: "var(--cr-muted)" }}>
+            No assets yet.
+          </p>
+          <Link
+            href={`/projects/${id}/assets/new`}
+            className="cr-btn cr-btn-primary"
+          >
+            <Plus /> Upload the first one
+          </Link>
+        </div>
       ) : (
-        <div className="grid gap-3">
+        <div className="flex flex-col gap-3">
           {assets.map((a) => (
-            <Link key={a.id} href={`/assets/${a.id}`}>
-              <Card className="transition-colors hover:border-neutral-400">
-                <CardContent className="flex items-center justify-between py-4">
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-medium">{a.name}</p>
-                    <p className="text-xs text-neutral-500">{a.type}</p>
-                  </div>
-                  <div className="flex items-center gap-3 text-xs">
-                    {a.deadline ? (
-                      <span className="text-neutral-500">Due {a.deadline}</span>
-                    ) : null}
-                    <Badge variant={assetStatusVariant(a.status)}>{a.status}</Badge>
-                  </div>
-                </CardContent>
-              </Card>
+            <Link
+              key={a.id}
+              href={`/assets/${a.id}`}
+              className="cr-card flex items-center gap-5 p-6 transition-colors hover:border-[var(--cr-line-strong)]"
+            >
+              <div className="min-w-0 flex-1">
+                <div
+                  className="truncate"
+                  style={{
+                    fontFamily: "var(--font-display), serif",
+                    fontWeight: 700,
+                    fontSize: 20,
+                    letterSpacing: "-0.01em",
+                  }}
+                >
+                  {a.name}
+                </div>
+                <div
+                  className="mt-0.5 text-[13px] font-semibold uppercase tracking-[0.04em]"
+                  style={{ color: "var(--cr-muted)" }}
+                >
+                  {a.type}
+                </div>
+              </div>
+              {a.deadline ? (
+                <span
+                  className="text-[14px]"
+                  style={{ color: "var(--cr-muted)" }}
+                >
+                  Due {formatShortDate(a.deadline)}
+                </span>
+              ) : null}
+              <AssetStatusBadge status={a.status} />
+              <span className="cr-btn cr-btn-sm cr-btn-ghost">
+                Open <ArrowRight size={14} />
+              </span>
             </Link>
           ))}
         </div>
@@ -108,17 +145,74 @@ export default async function ProjectDetailPage({
   );
 }
 
-function assetStatusVariant(
-  status: string,
-): "default" | "secondary" | "destructive" | "outline" {
-  switch (status) {
-    case "approved":
-      return "default";
-    case "rejected":
-      return "destructive";
-    case "revision_submitted":
-      return "secondary";
-    default:
-      return "outline";
+function ProjectStatusBadge({ status }: { status: string }) {
+  if (status === "completed") {
+    return (
+      <span className="cr-badge cr-badge-approved">
+        <span className="cr-badge-dot" />
+        Completed
+      </span>
+    );
   }
+  if (status === "in_review") {
+    return (
+      <span className="cr-badge">
+        <span className="cr-badge-dot" />
+        In review
+      </span>
+    );
+  }
+  if (status === "archived") {
+    return (
+      <span
+        className="cr-badge"
+        style={{ background: "var(--cr-paper-2)", color: "var(--cr-muted)" }}
+      >
+        <span
+          className="cr-badge-dot"
+          style={{ background: "var(--cr-line-strong)" }}
+        />
+        Archived
+      </span>
+    );
+  }
+  return (
+    <span className="cr-badge" style={{ color: "var(--cr-muted)" }}>
+      <span
+        className="cr-badge-dot"
+        style={{ background: "var(--cr-line-strong)" }}
+      />
+      Draft
+    </span>
+  );
+}
+
+function AssetStatusBadge({ status }: { status: string }) {
+  if (status === "approved") {
+    return (
+      <span className="cr-badge cr-badge-approved">
+        <span className="cr-badge-dot" />
+        Approved
+      </span>
+    );
+  }
+  if (status === "rejected" || status === "revision_submitted") {
+    return (
+      <span className="cr-badge cr-badge-changes">
+        <span className="cr-badge-dot" />
+        {status === "rejected" ? "Changes requested" : "Revision submitted"}
+      </span>
+    );
+  }
+  return (
+    <span className="cr-badge">
+      <span className="cr-badge-dot" />
+      Pending
+    </span>
+  );
+}
+
+function formatShortDate(iso: string): string {
+  const d = new Date(iso);
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }

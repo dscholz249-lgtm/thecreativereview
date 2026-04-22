@@ -1,9 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { createSignedUrl } from "@/lib/supabase/storage";
-import { Card, CardContent } from "@/components/ui/card";
-import { buttonVariants } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { ArrowRight } from "@/components/cr-icons";
 import type { AssetStatus } from "@/lib/database.types";
 
 type Tab = "pending" | "approved" | "changes_requested";
@@ -73,15 +71,30 @@ export default async function MyReviewsPage({
   }
 
   return (
-    <>
-      <header className="mb-6">
-        <h1 className="text-2xl font-semibold tracking-tight">My reviews</h1>
-        <p className="mt-1 text-sm text-neutral-600">
-          {pendingCount.count ?? 0} item{(pendingCount.count ?? 0) === 1 ? "" : "s"} waiting on your decision
-        </p>
-      </header>
+    <div className="max-w-[900px]">
+      <h1
+        className="cr-display"
+        style={{
+          fontFamily: "var(--font-display), serif",
+          fontWeight: 800,
+          fontSize: 44,
+          letterSpacing: "-0.02em",
+        }}
+      >
+        My reviews
+      </h1>
+      <p
+        className="mt-2 text-[16px]"
+        style={{ color: "var(--cr-muted)" }}
+      >
+        {pendingCount.count ?? 0} item{(pendingCount.count ?? 0) === 1 ? "" : "s"}{" "}
+        waiting on your decision.
+      </p>
 
-      <nav className="mb-5 flex items-center gap-1">
+      <nav
+        className="mt-7 mb-5 flex items-center gap-1"
+        style={{ borderBottom: "1px solid var(--cr-line)" }}
+      >
         <TabLink tab="pending" active={tab} count={pendingCount.count ?? 0} label="Pending" />
         <TabLink tab="approved" active={tab} count={approvedCount.count ?? 0} label="Approved" />
         <TabLink
@@ -93,56 +106,66 @@ export default async function MyReviewsPage({
       </nav>
 
       {assets.length === 0 ? (
-        <Card>
-          <CardContent className="py-12 text-center text-sm text-neutral-600">
+        <div className="cr-card flex flex-col items-center py-14 text-center">
+          <p className="text-[15px]" style={{ color: "var(--cr-muted)" }}>
             Nothing here yet.
-          </CardContent>
-        </Card>
+          </p>
+        </div>
       ) : (
-        <div className="grid gap-3">
+        <div className="flex flex-col gap-3">
           {assets.map((a) => (
-            <Card key={a.id}>
-              <CardContent className="flex items-center gap-4 py-3">
-                <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-md bg-neutral-100 text-[10px] font-medium uppercase tracking-wide text-neutral-500">
-                  {thumbUrls.get(a.id) ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={thumbUrls.get(a.id)!}
-                      alt=""
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <span>{labelFor(a.type)}</span>
-                  )}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">{a.name}</p>
-                  <p className="truncate text-xs text-neutral-500">
-                    {a.projects?.name ?? "—"} · {a.type}
-                  </p>
-                </div>
-                <div className="text-right text-xs">
-                  {a.deadline ? (
-                    <>
-                      <p className="font-medium text-neutral-700">{deadlineLabel(a.deadline)}</p>
-                      <p className="text-neutral-400">{a.deadline}</p>
-                    </>
-                  ) : (
-                    <p className="text-neutral-400">No deadline</p>
-                  )}
-                </div>
-                <Link
-                  href={`/review/assets/${a.id}`}
-                  className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+            <div key={a.id} className="cr-card flex items-center gap-5 p-5">
+              <div
+                className="flex size-[72px] shrink-0 items-center justify-center overflow-hidden text-[11px] font-bold uppercase tracking-[0.08em]"
+                style={{
+                  background: "var(--cr-paper-2)",
+                  border: "1px dashed var(--cr-line-strong)",
+                  borderRadius: "var(--cr-radius)",
+                  color: "var(--cr-muted)",
+                }}
+              >
+                {thumbUrls.get(a.id) ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={thumbUrls.get(a.id)!}
+                    alt=""
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <span>{labelFor(a.type)}</span>
+                )}
+              </div>
+              <div className="min-w-0 flex-1">
+                <div
+                  className="truncate"
+                  style={{
+                    fontFamily: "var(--font-display), serif",
+                    fontWeight: 700,
+                    fontSize: 20,
+                    letterSpacing: "-0.01em",
+                  }}
                 >
-                  {tab === "pending" ? "Review" : "View"}
-                </Link>
-              </CardContent>
-            </Card>
+                  {a.name}
+                </div>
+                <div
+                  className="mt-0.5 truncate text-[14px]"
+                  style={{ color: "var(--cr-muted)" }}
+                >
+                  {a.projects?.name ?? "—"} · {a.type}
+                </div>
+              </div>
+              <DeadlineLabel iso={a.deadline} />
+              <Link
+                href={`/review/assets/${a.id}`}
+                className="cr-btn cr-btn-sm cr-btn-primary"
+              >
+                {tab === "pending" ? "Review" : "View"} <ArrowRight size={14} />
+              </Link>
+            </div>
           ))}
         </div>
       )}
-    </>
+    </div>
   );
 }
 
@@ -161,15 +184,61 @@ function TabLink({
   return (
     <Link
       href={`/review/my-reviews?tab=${tab}`}
-      className={cn(
-        "rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
-        isActive
-          ? "bg-blue-50 text-blue-700"
-          : "text-neutral-600 hover:text-neutral-900",
-      )}
+      className="px-4 py-3 text-[15px] font-semibold transition-colors"
+      style={{
+        color: isActive ? "var(--cr-ink)" : "var(--cr-muted)",
+        borderBottom: isActive
+          ? "3px solid var(--cr-ink)"
+          : "3px solid transparent",
+        marginBottom: -1,
+      }}
     >
-      {label} ({count})
+      {label}{" "}
+      <span
+        className="ml-1 inline-block rounded-md px-2 py-0.5 text-[13px] font-bold"
+        style={{
+          background: isActive ? "var(--cr-accent-green)" : "var(--cr-paper-2)",
+          color: isActive ? "var(--cr-accent-green-ink)" : "var(--cr-muted)",
+        }}
+      >
+        {count}
+      </span>
     </Link>
+  );
+}
+
+function DeadlineLabel({ iso }: { iso: string | null }) {
+  if (!iso) {
+    return (
+      <span className="text-[14px]" style={{ color: "var(--cr-muted)" }}>
+        No deadline
+      </span>
+    );
+  }
+  // eslint-disable-next-line react-hooks/purity
+  const now = Date.now();
+  const due = new Date(`${iso}T23:59:59`).getTime();
+  const diffDays = Math.ceil((due - now) / 86_400_000);
+  const urgent = diffDays <= 2;
+  const text =
+    diffDays < 0
+      ? `${Math.abs(diffDays)}d overdue`
+      : diffDays === 0
+        ? "Due today"
+        : diffDays === 1
+          ? "Due tomorrow"
+          : `Due in ${diffDays}d`;
+
+  return (
+    <span
+      className="text-[14px]"
+      style={{
+        color: urgent ? "var(--cr-destructive-ink)" : "var(--cr-muted)",
+        fontWeight: urgent ? 700 : 500,
+      }}
+    >
+      {text}
+    </span>
   );
 }
 
@@ -186,14 +255,4 @@ function labelFor(type: string): string {
     default:
       return type.slice(0, 3).toUpperCase();
   }
-}
-
-function deadlineLabel(deadline: string): string {
-  const now = new Date();
-  const due = new Date(`${deadline}T23:59:59`);
-  const diffDays = Math.ceil((due.getTime() - now.getTime()) / 86_400_000);
-  if (diffDays < 0) return `${Math.abs(diffDays)}d overdue`;
-  if (diffDays === 0) return "Due today";
-  if (diffDays === 1) return "Due tomorrow";
-  return `Due in ${diffDays}d`;
 }
