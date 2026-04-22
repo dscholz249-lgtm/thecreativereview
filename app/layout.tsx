@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Roboto_Slab, Inter, JetBrains_Mono } from "next/font/google";
+import { GoogleAnalytics } from "@next/third-parties/google";
+import { env } from "@/lib/env";
 import "./globals.css";
 
 // Display face — bold slab serif for headlines and hero type. Per the design
@@ -45,6 +47,12 @@ export default function RootLayout({
       className={`${robotoSlab.variable} ${inter.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">{children}</body>
+      {/* GA4 loads after hydration; the Next.js component handles the
+          gtag dataLayer bootstrap. Gated on an env var so dev / local
+          builds don't send noise to the prod property. */}
+      {env.NEXT_PUBLIC_GA_ID ? (
+        <GoogleAnalytics gaId={env.NEXT_PUBLIC_GA_ID} />
+      ) : null}
     </html>
   );
 }

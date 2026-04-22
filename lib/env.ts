@@ -14,6 +14,14 @@ const schema = z.object({
   //   live     → full marketing landing with Start free / Log in CTAs
   // Flip to 'live' on Railway when launching; no code deploy needed.
   NEXT_PUBLIC_LAUNCH_MODE: z.enum(["waitlist", "live"]).default("waitlist"),
+  // Google Analytics 4 measurement ID (e.g. "G-XXXXXXXXXX"). Unset in
+  // dev/local so we don't pollute the prod property with test hits; set
+  // on Railway. When unset, the GoogleAnalytics component is not rendered
+  // and no gtag script ships to the client.
+  NEXT_PUBLIC_GA_ID: z
+    .string()
+    .regex(/^G-[A-Z0-9]+$/, "Must look like G-XXXXXXXXXX")
+    .optional(),
 });
 
 // Coerce "" → undefined so `.default()` and `.optional()` kick in when a
@@ -27,6 +35,7 @@ const raw = {
   NEXT_PUBLIC_APP_URL: emptyToUndefined(process.env.NEXT_PUBLIC_APP_URL),
   NEXT_PUBLIC_SENTRY_DSN: emptyToUndefined(process.env.NEXT_PUBLIC_SENTRY_DSN),
   NEXT_PUBLIC_LAUNCH_MODE: emptyToUndefined(process.env.NEXT_PUBLIC_LAUNCH_MODE),
+  NEXT_PUBLIC_GA_ID: emptyToUndefined(process.env.NEXT_PUBLIC_GA_ID),
 };
 
 export const env = schema.parse(raw);
