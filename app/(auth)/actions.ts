@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/server/admin-client";
+import { env } from "@/lib/env";
 import { track } from "@/lib/analytics";
 
 const SignupInput = z.object({
@@ -109,4 +110,57 @@ export async function logout(): Promise<void> {
   await supabase.auth.signOut();
   revalidatePath("/", "layout");
   redirect("/login");
+}
+
+// Send a one-time sign-in link. Doubles as password recovery — an admin
+// who's lost their password hits "Forgot?" on /login, requests a magic
+// link, and the /auth/callback route consumes it the same way reviewer
+// invites are consumed.
+//
+// shouldCreateUser=false so a forgotten-password flow can't spawn orphan
+// auth.users rows for typo'd emails (those users would land without an
+// admin_profile and be stuck on the landing page). Supabase returns a
+// discriminable error when the email isn't on file; to avoid account
+// enumeration we show the generic "check your email" confirmation
+// regardless.
+export async function sendMagicLinkAction(
+  _prev: AuthActionResult | null,
+  formData: FormData,
+): Promise<AuthActionResult> {
+  const parsed = z
+    .object({ email: z.string().trim().email() })
+    .safeParse({ email: formData.get("email") });
+  if (!parsed.success) {
+    return { ok: false, error: "That email doesn't look right." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.signInWithOtp({
+    email: parsed.data.email,
+    options: {
+      shouldCreateUser: false,
+      emailRedirectTo: `${env.NEXT_PUBLIC_APP_URL}/auth/callback`,
+    },
+  });
+
+  // Swallow the "user not registered" / "signup disabled" errors so we
+  // don't leak whether an email has an account. Let genuinely different
+  // errors (rate limit, Supabase down) through so the user knows to retry.
+  if (error) {
+    const msg = error.message.toLowerCase();
+    const isEnumerationLeak =
+      msg.includes("not registered") ||
+      msg.includes("signups not allowed") ||
+      msg.includes("signup not allowed") ||
+      msg.includes("user not found");
+    if (!isEnumerationLeak) {
+      return { ok: false, error: error.message };
+    }
+  }
+
+  return {
+    ok: true,
+    message:
+      "If an account exists for that email, we sent a sign-in link. Check your inbox.",
+  };
 }
