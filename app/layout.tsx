@@ -34,6 +34,12 @@ export const metadata: Metadata = {
   title: "The Creative Review",
   description:
     "A focused creative review and approval tool for freelancers and small teams. Clean approvals, click-to-pin feedback.",
+  // Favicon pulls straight from the brand kit in public/brand so updates
+  // are a file swap, not a code change. Dark variant is chosen because
+  // light browser chrome makes the paper ticket wash out at 32px.
+  icons: {
+    icon: "/brand/logo-glyph-dark.svg",
+  },
 };
 
 export default function RootLayout({

@@ -1,13 +1,10 @@
-// Creative Review — Logo 04B (Filmstrip-check) — TypeScript port of the
-// design bundle's CreativeReviewLogo.jsx. Sizing contract is mathematical:
-// the ticket height is locked to the wordmark stack (eyebrow + "Creative"
-// + "Review") so cap and baseline align. Don't stretch the ticket
-// independently — size via `fontSize` and the ratios hold.
+// Creative Review logo component — thin wrapper around the brand SVGs
+// in public/brand. Renders via <img> so the output is pixel-identical
+// to the design handoff (SVG text and HTML text don't render the same
+// even at matching sizes; the earlier inline-SVG version was close but
+// not exact, which drove the "the logo is wrong" feedback).
 //
-// Tokens:
-//   --cr-ink, --cr-paper, --cr-accent-green, --cr-muted, --font-display
-// Override ink/paper via props only when rendering outside the app shell
-// (e.g. burned into an email image where CSS vars don't resolve).
+// Swapping a logo is now a file swap in public/brand/ — no code change.
 
 import type { CSSProperties } from "react";
 
@@ -15,16 +12,26 @@ type Variant = "light" | "dark";
 
 export type CreativeReviewLogoProps = {
   variant?: Variant;
+  // Used to derive height via the sizing contract in public/brand/README.md.
+  // Any fontSize works; 16 for nav, 32 for footer, 72+ for hero.
   fontSize?: number;
+  // When false, renders just the ticket glyph (no wordmark) since the
+  // lockup SVG has the eyebrow + wordmark baked in and can't be disabled.
+  // Callers that want a compact mark-only version pass false.
   withEyebrow?: boolean;
   className?: string;
   style?: CSSProperties;
 };
 
-const INK_LIGHT = "var(--cr-ink)";
-const INK_DARK = "#FAFAF7";
-const PAPER_LIGHT = "var(--cr-paper)";
-const PAPER_DARK = "var(--cr-ink)";
+// Sizing contract lives in public/brand/README.md. Keep this in sync.
+// At fontSize=16 with eyebrow the total lockup is 45.4px tall — big
+// enough for the 11px minimum eyebrow to stay readable, small enough
+// to fit a ~60px nav header.
+function stackHeightFor(fontSize: number, withEyebrow: boolean): number {
+  const eyebrowSize = Math.max(fontSize * 0.3, 11);
+  const eyebrowGap = 4;
+  return (withEyebrow ? eyebrowSize + eyebrowGap : 0) + fontSize * 0.95 * 2;
+}
 
 export function CreativeReviewLogo({
   variant = "light",
@@ -35,131 +42,63 @@ export function CreativeReviewLogo({
 }: CreativeReviewLogoProps) {
   const dark = variant === "dark";
 
-  // Wordmark stack height = eyebrow row + gap + two wordmark lines.
-  // Clamp eyebrow size to 11px minimum so the brand's "The" stays
-  // readable in compact nav lockups (fontSize 16 × 0.3 = 4.8px is
-  // illegible). Hero sizes (fontSize 72+) are unaffected.
-  const eyebrowSize = Math.max(fontSize * 0.3, 11);
-  const eyebrowGap = 4;
-  const stackH =
-    (withEyebrow ? eyebrowSize + eyebrowGap : 0) + fontSize * 0.95 * 2;
+  if (!withEyebrow) {
+    // Wordmark is locked into the lockup SVG — if a caller wants no
+    // wordmark flourish at all, render the standalone glyph instead.
+    return (
+      <CreativeReviewGlyph
+        // Height-only: glyph's 120×154 aspect comes from the SVG.
+        size={fontSize * 0.95 * 2}
+        variant={variant}
+        className={className}
+        style={style}
+      />
+    );
+  }
 
-  const ticketH = stackH;
-  const ticketW = ticketH * 0.78;
-
-  const inkFill = dark ? INK_DARK : INK_LIGHT;
-  const ticketFill = dark ? PAPER_DARK : PAPER_LIGHT;
-  const wordmarkColor = dark ? INK_DARK : INK_LIGHT;
-  const eyebrowColor = dark ? "rgba(255,255,255,0.55)" : "var(--cr-muted)";
+  const height = stackHeightFor(fontSize, true);
+  const src = dark
+    ? "/brand/logo-lockup-dark.svg"
+    : "/brand/logo-lockup.svg";
 
   return (
-    <div
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={src}
+      alt="The Creative Review"
       className={className}
-      style={{
-        display: "inline-flex",
-        alignItems: "stretch",
-        gap: fontSize * 0.3,
-        ...style,
-      }}
-    >
-      <CreativeReviewGlyph
-        width={ticketW}
-        height={ticketH}
-        variant={variant}
-        inkFill={inkFill}
-        ticketFill={ticketFill}
-      />
-      <div
-        style={{
-          fontFamily: "var(--font-display), 'Roboto Slab', Georgia, serif",
-          fontWeight: 800,
-          fontSize,
-          lineHeight: 0.95,
-          letterSpacing: "-0.02em",
-          color: wordmarkColor,
-        }}
-      >
-        {withEyebrow ? (
-          <div
-            style={{
-              fontFamily: "var(--font-display), 'Roboto Slab', Georgia, serif",
-              fontWeight: 600,
-              fontSize: eyebrowSize,
-              letterSpacing: "-0.01em",
-              color: eyebrowColor,
-              marginBottom: eyebrowGap,
-            }}
-          >
-            The
-          </div>
-        ) : null}
-        <div>Creative</div>
-        <div>Review</div>
-      </div>
-    </div>
+      style={{ height, width: "auto", display: "inline-block", ...style }}
+    />
   );
 }
 
-// Standalone ticket glyph. Use for favicon, app icon, avatars — anywhere
-// the full lockup would be too wide. The inner check panel is always
-// accent-green; the frame flips with `variant`.
+// Standalone ticket glyph. Used for tiny marks (avatars, loading
+// placeholders) and, indirectly, for the favicon — app/layout.tsx's
+// metadata.icons points straight at the -dark file in public/brand.
 export function CreativeReviewGlyph({
-  size,
-  width,
-  height,
+  size = 40,
   variant = "light",
-  inkFill,
-  ticketFill,
+  className,
+  style,
 }: {
   size?: number;
-  width?: number;
-  height?: number;
   variant?: Variant;
-  inkFill?: string;
-  ticketFill?: string;
+  className?: string;
+  style?: CSSProperties;
 }) {
-  const dark = variant === "dark";
-  const w = size ?? width ?? 40;
-  const h = size ?? height ?? 52;
-  const _ink = inkFill ?? (dark ? INK_DARK : INK_LIGHT);
-  const _fill = ticketFill ?? (dark ? PAPER_DARK : PAPER_LIGHT);
-
+  const src = variant === "dark"
+    ? "/brand/logo-glyph-dark.svg"
+    : "/brand/logo-glyph.svg";
+  // Glyph viewBox is 120×154 (width / height ≈ 0.78). Setting height
+  // and width: auto keeps the aspect locked.
   return (
-    <svg
-      width={w}
-      height={h}
-      viewBox={`0 0 ${w} ${h}`}
-      style={{ flexShrink: 0 }}
-      role="img"
-      aria-label="The Creative Review"
-    >
-      <rect
-        x={4}
-        y={4}
-        width={w - 8}
-        height={h - 8}
-        rx={8}
-        fill={_fill}
-        stroke={_ink}
-        strokeWidth={4}
-      />
-      <rect
-        x={w * 0.12}
-        y={h * 0.22}
-        width={w * 0.76}
-        height={h * 0.56}
-        rx={4}
-        fill="var(--cr-accent-green)"
-      />
-      <path
-        d={`M ${w * 0.25} ${h * 0.52} L ${w * 0.44} ${h * 0.68} L ${w * 0.75} ${h * 0.32}`}
-        stroke="var(--cr-ink)"
-        strokeWidth={w * 0.1}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        fill="none"
-      />
-    </svg>
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={src}
+      alt="The Creative Review"
+      className={className}
+      style={{ height: size, width: "auto", display: "inline-block", ...style }}
+    />
   );
 }
 
