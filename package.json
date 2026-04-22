@@ -10,7 +10,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run --exclude 'tests/**/*.integration.test.ts'",
     "test:watch": "vitest --exclude 'tests/**/*.integration.test.ts'",
-    "test:integration": "vitest run 'tests/**/*.integration.test.ts'",
+    "test:integration": "vitest run tests/integration/",
     "db:start": "supabase start",
     "db:stop": "supabase stop",
     "db:reset": "supabase db reset && npm run db:seed",
