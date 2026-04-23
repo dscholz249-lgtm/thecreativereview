@@ -35,10 +35,10 @@ export const metadata: Metadata = {
   description:
     "A focused creative review and approval tool for freelancers and small teams. Clean approvals, click-to-pin feedback.",
   // Favicon pulls straight from the brand kit in public/brand so updates
-  // are a file swap, not a code change. Dark variant is chosen because
-  // light browser chrome makes the paper ticket wash out at 32px.
+  // are a file swap, not a code change. Same v2 paper glyph the logo
+  // component uses — the ink stroke + green panel read fine at 32px.
   icons: {
-    icon: "/brand/logo-glyph-dark.svg",
+    icon: "/brand/logo-glyph-2.svg",
   },
 };
 

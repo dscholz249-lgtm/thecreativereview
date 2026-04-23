@@ -57,9 +57,12 @@ export function CreativeReviewLogo({
   }
 
   const height = stackHeightFor(fontSize, true);
+  // Light variant uses the v2 export — wordmark rendered as paths so it's
+  // pixel-identical regardless of whether Roboto Slab has finished loading.
+  // Dark variant keeps the text-based export until a v2-dark lands.
   const src = dark
     ? "/brand/logo-lockup-dark.svg"
-    : "/brand/logo-lockup.svg";
+    : "/brand/logo-lockup-2.svg";
 
   return (
     // eslint-disable-next-line @next/next/no-img-element
@@ -88,7 +91,7 @@ export function CreativeReviewGlyph({
 }) {
   const src = variant === "dark"
     ? "/brand/logo-glyph-dark.svg"
-    : "/brand/logo-glyph.svg";
+    : "/brand/logo-glyph-2.svg";
   // Glyph viewBox is 120×154 (width / height ≈ 0.78). Setting height
   // and width: auto keeps the aspect locked.
   return (
