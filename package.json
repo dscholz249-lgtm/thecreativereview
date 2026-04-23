@@ -15,6 +15,7 @@
     "db:stop": "supabase stop",
     "db:reset": "supabase db reset && npm run db:seed",
     "db:seed": "tsx scripts/seed.ts",
+    "test:waitlist": "tsx scripts/test-waitlist.ts",
     "db:types": "supabase gen types typescript --local > lib/database.types.ts",
     "worker:digest": "tsx workers/digest.ts"
   },
