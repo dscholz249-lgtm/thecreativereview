@@ -42,9 +42,18 @@ export function LandingFooter() {
           color: "var(--cr-muted)",
         }}
       >
-        <p className="mx-auto max-w-6xl text-[12px]">
-          © {new Date().getFullYear()} Creative Review.
-        </p>
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-2 gap-y-1 text-[12px]">
+          <span>© {new Date().getFullYear()} The Creative Review</span>
+          <span style={{ color: "var(--cr-line-strong)" }}>·</span>
+          <a
+            href="https://www.scholzfamilyconsulting.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="transition-colors hover:text-[var(--cr-ink)]"
+          >
+            Built by SFC Labs
+          </a>
+        </div>
       </div>
     </footer>
   );
