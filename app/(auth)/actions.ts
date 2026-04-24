@@ -1,5 +1,6 @@
 "use server";
 
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
@@ -7,6 +8,10 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/server/admin-client";
 import { env } from "@/lib/env";
 import { track } from "@/lib/analytics";
+
+// Kept in sync with app/admin-invite/[token]/actions.ts +
+// components/password-setup-modal.tsx.
+const NEEDS_PASSWORD_COOKIE = "cr_needs_password";
 
 const SignupInput = z.object({
   email: z.string().email(),
@@ -163,4 +168,52 @@ export async function sendMagicLinkAction(
     message:
       "If an account exists for that email, we sent a sign-in link. Check your inbox.",
   };
+}
+
+const SetPasswordInput = z.object({
+  password: z.string().min(8, "At least 8 characters").max(72),
+});
+
+// Invited admins land in the app via a Supabase magic link — they don't
+// have a password set, so we prompt them via the PasswordSetupModal.
+// This action does the update + clears the "needs password" cookie.
+export async function setPasswordAction(
+  _prev: AuthActionResult | null,
+  formData: FormData,
+): Promise<AuthActionResult> {
+  const parsed = SetPasswordInput.safeParse({
+    password: formData.get("password"),
+  });
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error: parsed.error.issues[0]?.message ?? "Invalid password",
+    };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Not authenticated" };
+
+  const { error } = await supabase.auth.updateUser({
+    password: parsed.data.password,
+  });
+  if (error) return { ok: false, error: error.message };
+
+  const jar = await cookies();
+  jar.delete(NEEDS_PASSWORD_COOKIE);
+
+  revalidatePath("/", "layout");
+  return { ok: true, message: "Password set. You can sign in with it next time." };
+}
+
+// "Skip for now" on the setup modal — clears the cookie so the user
+// isn't nagged every page load. They can still sign back in via magic
+// link and they can set a password later from the profile menu (TODO).
+export async function dismissPasswordSetupAction(): Promise<void> {
+  const jar = await cookies();
+  jar.delete(NEEDS_PASSWORD_COOKIE);
+  revalidatePath("/", "layout");
 }
