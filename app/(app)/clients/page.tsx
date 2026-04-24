@@ -3,6 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import { PageHeading, LinkButton } from "@/components/page-heading";
 import { Avatar, avatarVariantFor } from "@/components/cr-avatar";
 import { ArrowRight, Plus } from "@/components/cr-icons";
+import { PLAN_LIMITS, formatLimit } from "@/lib/plans";
+import { PLAN_LABELS } from "@/lib/stripe/config";
 
 type ClientRow = {
   id: string;
@@ -27,6 +29,25 @@ export default async function ClientsIndexPage() {
 
   const clients = ((data ?? []) as unknown as ClientRow[]).filter((c) => !c.archived);
 
+  // Plan tier + cap, so the "3 of 5 clients" counter + upgrade hint stays
+  // honest if an admin ships a new plan mid-session. Looked up per render
+  // rather than cached — clients list isn't a hot path.
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const { data: profile } = user
+    ? await supabase
+        .from("admin_profiles")
+        .select("workspaces(plan)")
+        .eq("user_id", user.id)
+        .maybeSingle()
+    : { data: null };
+  const plan =
+    (profile?.workspaces as { plan: keyof typeof PLAN_LIMITS } | null)?.plan ??
+    "oss";
+  const cap = PLAN_LIMITS[plan].activeClients;
+  const atCap = clients.length >= cap;
+
   return (
     <>
       <PageHeading
@@ -42,6 +63,13 @@ export default async function ClientsIndexPage() {
             </LinkButton>
           </>
         }
+      />
+
+      <UsageCounter
+        count={clients.length}
+        cap={cap}
+        planLabel={PLAN_LABELS[plan]}
+        atCap={atCap}
       />
 
       {clients.length === 0 ? (
@@ -118,6 +146,44 @@ function EmptyClients() {
       <Link href="/clients/new" className="cr-btn cr-btn-primary">
         <Plus /> Create your first client
       </Link>
+    </div>
+  );
+}
+
+// Row above the clients list showing "N of M clients." Only rendered when
+// the plan has a finite cap (OSS + Agency skip this — unlimited). Turns
+// destructive-ink when at the cap and links to Billing with upsell copy.
+function UsageCounter({
+  count,
+  cap,
+  planLabel,
+  atCap,
+}: {
+  count: number;
+  cap: number;
+  planLabel: string;
+  atCap: boolean;
+}) {
+  if (!Number.isFinite(cap)) return null;
+  const near = !atCap && count >= cap - 1;
+  return (
+    <div
+      className="mb-5 flex flex-wrap items-center gap-3 text-[14px]"
+      style={{ color: atCap ? "var(--cr-destructive-ink)" : "var(--cr-muted)" }}
+    >
+      <span style={{ fontWeight: atCap || near ? 700 : 500 }}>
+        {count} of {formatLimit(cap)} clients
+      </span>
+      <span style={{ color: "var(--cr-line-strong)" }}>·</span>
+      <span>{planLabel} plan</span>
+      {atCap ? (
+        <>
+          <span style={{ color: "var(--cr-line-strong)" }}>·</span>
+          <Link href="/billing" className="cr-link">
+            Upgrade for more
+          </Link>
+        </>
+      ) : null}
     </div>
   );
 }
