@@ -101,6 +101,9 @@ export function AppNav({ workspaceName, userEmail }: NavProps) {
               <span className="text-sm">{userEmail}</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
+            <DropdownMenuItem render={<Link href="/settings/members" />}>
+              Members
+            </DropdownMenuItem>
             <DropdownMenuItem render={<Link href="/billing" />}>
               Billing
             </DropdownMenuItem>

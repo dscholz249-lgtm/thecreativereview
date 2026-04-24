@@ -441,6 +441,42 @@ export type Database = {
         };
         Relationships: [];
       };
+      admin_invites: {
+        Row: {
+          id: string;
+          workspace_id: string;
+          email: string;
+          role: AdminRole;
+          invite_token: string;
+          invite_expires_at: Timestamp;
+          invited_by_user_id: string | null;
+          accepted_at: Timestamp | null;
+          created_at: Timestamp;
+        };
+        Insert: {
+          id?: string;
+          workspace_id: string;
+          email: string;
+          role?: AdminRole;
+          invite_token: string;
+          invite_expires_at: Timestamp;
+          invited_by_user_id?: string | null;
+          accepted_at?: Timestamp | null;
+          created_at?: Timestamp;
+        };
+        Update: {
+          id?: string;
+          workspace_id?: string;
+          email?: string;
+          role?: AdminRole;
+          invite_token?: string;
+          invite_expires_at?: Timestamp;
+          invited_by_user_id?: string | null;
+          accepted_at?: Timestamp | null;
+          created_at?: Timestamp;
+        };
+        Relationships: [];
+      };
       asset_share_tokens: {
         Row: {
           id: string;
