@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { randomBytes } from "crypto";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -13,10 +14,19 @@ import {
   notifyProjectCompletedIfNeeded,
 } from "@/lib/notifications";
 import { track } from "@/lib/analytics";
+import { env } from "@/lib/env";
 
 export type ActionResult =
   | { ok: true }
   | { ok: false; error: string };
+
+export type ShareLinkResult =
+  | { ok: true; url: string; expiresAt: string }
+  | { ok: false; error: string };
+
+// How long a reviewer-minted share link stays live. Matches the invite
+// token window so 30-day access behavior is consistent across the app.
+const SHARE_TOKEN_TTL_DAYS = 30;
 
 // Approve decision. Invariant check lives in three places:
 //   1) the DecisionInputSchema discriminated union (typed: feedback/annotations
@@ -178,4 +188,74 @@ async function fireDecisionNotifications(
   } catch (err) {
     console.error("[notify] project completed failed", err);
   }
+}
+
+// Mint a 30-day view-only share token for an asset. Reviewer-scoped:
+// RLS on asset_share_tokens enforces that the creating reviewer is
+// actually assigned to a client that owns the asset. Token is random 24
+// bytes base64url-encoded — unguessable, uniform length.
+export async function createAssetShareLinkAction(
+  _prev: ShareLinkResult | null,
+  formData: FormData,
+): Promise<ShareLinkResult> {
+  const parsed = z
+    .object({
+      asset_id: z.string().uuid(),
+      asset_version_id: z.string().uuid().optional(),
+    })
+    .safeParse({
+      asset_id: formData.get("asset_id"),
+      asset_version_id: formData.get("asset_version_id") || undefined,
+    });
+  if (!parsed.success) {
+    return { ok: false, error: "Invalid asset or version." };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Not authenticated." };
+
+  // Resolve the current_reviewer id for this asset. A reviewer can have
+  // multiple client_reviewers rows (one per client); pick the one whose
+  // client owns the asset's project.
+  const { data: reviewer, error: reviewerError } = await supabase
+    .from("client_reviewers")
+    .select("id, client_id, clients!inner(projects!inner(assets!inner(id)))")
+    .eq("auth_user_id", user.id)
+    .eq("clients.projects.assets.id", parsed.data.asset_id)
+    .limit(1)
+    .maybeSingle();
+  if (reviewerError) {
+    return { ok: false, error: reviewerError.message };
+  }
+  if (!reviewer) {
+    return { ok: false, error: "You aren't a reviewer on this asset." };
+  }
+
+  const token = randomBytes(24).toString("base64url");
+  const expiresAt = new Date(
+    Date.now() + SHARE_TOKEN_TTL_DAYS * 24 * 60 * 60 * 1000,
+  ).toISOString();
+
+  const { error: insertError } = await supabase
+    .from("asset_share_tokens")
+    .insert({
+      token,
+      asset_id: parsed.data.asset_id,
+      asset_version_id: parsed.data.asset_version_id ?? null,
+      created_by_reviewer_id: reviewer.id,
+      expires_at: expiresAt,
+    });
+  if (insertError) {
+    console.error("[share] token insert failed", insertError);
+    return { ok: false, error: "Couldn't create a share link." };
+  }
+
+  return {
+    ok: true,
+    url: `${env.NEXT_PUBLIC_APP_URL}/share/asset/${token}`,
+    expiresAt,
+  };
 }

@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createSignedUrl } from "@/lib/supabase/storage";
 import { File as FileIcon, X } from "@/components/cr-icons";
 import { ApproveButton } from "./approve-button";
+import { ShareLinkButton } from "./share-link-button";
 
 export default async function ReviewerAssetPage({
   params,
@@ -199,6 +200,14 @@ export default async function ReviewerAssetPage({
               </p>
             </div>
           )}
+
+          {/* Share button is always available — pre- and post-decision.
+              Someone else can weigh in without needing their own invite,
+              but they can only view, not act. */}
+          <ShareLinkButton
+            assetId={asset.id}
+            assetVersionId={version.id}
+          />
         </aside>
       </div>
     </div>

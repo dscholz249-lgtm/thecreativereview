@@ -1,9 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { randomBytes } from "crypto";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/server/admin-client";
 import { sendEmail } from "@/lib/email";
 import { env } from "@/lib/env";
 import ReviewerInviteEmail from "@/emails/reviewer-invite";
@@ -17,6 +17,13 @@ const InviteReviewerSchema = z.object({
 export type ActionResult =
   | { ok: true; message?: string }
   | { ok: false; error: string; fieldErrors?: Record<string, string> };
+
+// How long our invite links stay clickable. Supabase's OTP caps at ~24h on
+// the cloud tier; we use our own token layer so 30-day invites work without
+// waiting for Supabase Dashboard config. /invite/[token] mints a fresh
+// short-lived Supabase magic link at click time, so Supabase's cap only
+// applies to the last-mile auth hop.
+const INVITE_TOKEN_TTL_DAYS = 30;
 
 export async function inviteReviewerAction(
   _prev: ActionResult | null,
@@ -36,10 +43,9 @@ export async function inviteReviewerAction(
     return { ok: false, error: "Please fix the errors below.", fieldErrors };
   }
 
-  // Authenticated server client (RLS-scoped) loads the surrounding context so
-  // the email has a real workspace + inviter name. The service-role client
-  // is used only for operations the reviewer flow genuinely requires
-  // (creating/linking auth.users via generateLink).
+  // RLS-scoped client loads the surrounding context so the email carries
+  // workspace + inviter name. The actual invite token goes into the same
+  // client_reviewers row — no service-role needed at send time.
   const supabase = await createClient();
   const {
     data: { user: inviter },
@@ -64,47 +70,31 @@ export async function inviteReviewerAction(
   const firstProject =
     (ctx.projects as Array<{ id: string; name: string }> | null)?.[0] ?? null;
 
-  // Upsert the client_reviewers row. The unique (client_id, email) constraint
-  // means re-inviting the same email updates rather than duplicates.
+  // Mint our own invite token — 30-day expiry. Upsert the client_reviewers
+  // row so re-invites refresh the token and extend the window.
+  const inviteToken = randomBytes(24).toString("base64url");
+  const inviteExpiresAt = new Date(
+    Date.now() + INVITE_TOKEN_TTL_DAYS * 24 * 60 * 60 * 1000,
+  ).toISOString();
+
   const { error: upsertError } = await supabase
     .from("client_reviewers")
     .upsert(
-      { client_id: parsed.data.client_id, email: parsed.data.email, name: parsed.data.name ?? null },
+      {
+        client_id: parsed.data.client_id,
+        email: parsed.data.email,
+        name: parsed.data.name ?? null,
+        invite_token: inviteToken,
+        invite_expires_at: inviteExpiresAt,
+      },
       { onConflict: "client_id,email" },
     );
   if (upsertError) return { ok: false, error: upsertError.message };
 
-  // Generate a magic link via the admin client. For brand-new reviewers we
-  // use 'invite' (creates unconfirmed user + confirmation link); for existing
-  // users we use 'magiclink'. The client_reviewers → auth.users linking
-  // happens via the link_reviewer_on_auth_user trigger from milestone 3's
-  // migration, so we don't wire the auth_user_id here.
-  const admin = createAdminClient();
-  const {
-    data: existingUsers,
-  } = await admin.auth.admin.listUsers({ perPage: 1, page: 1 });
-  // listUsers doesn't filter by email directly, so we scan. For a small beta
-  // this is fine; if it grows, switch to a dedicated lookup table.
-  const allUsers = await admin.auth.admin.listUsers({ perPage: 1000, page: 1 });
-  void existingUsers;
-  const alreadyExists = allUsers.data.users.some(
-    (u) => u.email?.toLowerCase() === parsed.data.email.toLowerCase(),
-  );
-
-  // No query string — Supabase's allow-list glob matching doesn't always
-  // play well with `?next=…`, and we don't need it: the callback sniffs
-  // user type (reviewer vs admin) and routes accordingly.
-  const redirectTo = `${env.NEXT_PUBLIC_APP_URL}/auth/callback`;
-  const { data: linkData, error: linkError } = await admin.auth.admin.generateLink({
-    type: alreadyExists ? "magiclink" : "invite",
-    email: parsed.data.email,
-    options: { redirectTo },
-  });
-  if (linkError || !linkData) {
-    return { ok: false, error: linkError?.message ?? "Failed to generate sign-in link." };
-  }
-
-  const signInUrl = linkData.properties.action_link;
+  // The invite URL goes through OUR route, not Supabase's OTP directly.
+  // /invite/[token] verifies the token + expiry and mints a fresh
+  // short-lived Supabase magic link per click.
+  const signInUrl = `${env.NEXT_PUBLIC_APP_URL}/invite/${inviteToken}`;
 
   const emailResult = await sendEmail({
     to: parsed.data.email,
