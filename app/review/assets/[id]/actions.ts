@@ -217,19 +217,38 @@ export async function createAssetShareLinkAction(
   } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: "Not authenticated." };
 
-  // Resolve the current_reviewer id for this asset. A reviewer can have
-  // multiple client_reviewers rows (one per client); pick the one whose
-  // client owns the asset's project.
+  // Resolve the current_reviewer id for this asset. A reviewer can be
+  // assigned to multiple clients; pick the row whose client owns the
+  // project this asset lives in.
+  //
+  // Two queries instead of one nested filter because PostgREST's
+  // `.eq("clients.projects.assets.id", ...)` narrows the embedded rows
+  // it returns, not the parent row — the previous one-shot query came
+  // back with an empty nested list and we mistook that for "no
+  // reviewer." The first query also doubles as an RLS access check:
+  // if the reviewer doesn't have access, the row is null.
+  const { data: asset, error: assetError } = await supabase
+    .from("assets")
+    .select("id, projects!inner(client_id)")
+    .eq("id", parsed.data.asset_id)
+    .maybeSingle();
+  if (assetError) return { ok: false, error: assetError.message };
+  if (!asset) {
+    return { ok: false, error: "Asset not found or not accessible." };
+  }
+  const clientId = (asset.projects as unknown as { client_id: string } | null)
+    ?.client_id;
+  if (!clientId) {
+    return { ok: false, error: "Asset is missing a client." };
+  }
+
   const { data: reviewer, error: reviewerError } = await supabase
     .from("client_reviewers")
-    .select("id, client_id, clients!inner(projects!inner(assets!inner(id)))")
+    .select("id")
     .eq("auth_user_id", user.id)
-    .eq("clients.projects.assets.id", parsed.data.asset_id)
-    .limit(1)
+    .eq("client_id", clientId)
     .maybeSingle();
-  if (reviewerError) {
-    return { ok: false, error: reviewerError.message };
-  }
+  if (reviewerError) return { ok: false, error: reviewerError.message };
   if (!reviewer) {
     return { ok: false, error: "You aren't a reviewer on this asset." };
   }
