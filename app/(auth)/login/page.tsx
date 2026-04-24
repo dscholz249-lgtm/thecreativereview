@@ -162,6 +162,22 @@ export default function LoginPage() {
             <SubmitButton pending={loginPending}>Log in</SubmitButton>
           </form>
 
+          <OrDivider />
+
+          <button
+            type="button"
+            onClick={() => setMode("magic")}
+            className="cr-btn w-full"
+          >
+            <MagicGlyph /> Email me a sign-in link
+          </button>
+          <p
+            className="mt-2 text-center text-[13px]"
+            style={{ color: "var(--cr-muted)" }}
+          >
+            Works for invited admins without a password set yet.
+          </p>
+
           <p
             className="mt-5 text-center text-[15px]"
             style={{ color: "var(--cr-muted)" }}
@@ -278,6 +294,42 @@ function CrossIcon() {
       strokeLinecap="round"
     >
       <path d="M4 4l8 8M12 4l-8 8" />
+    </svg>
+  );
+}
+
+function OrDivider() {
+  return (
+    <div
+      className="my-5 flex items-center gap-3 text-[12px] font-bold uppercase tracking-[0.08em]"
+      style={{ color: "var(--cr-muted)" }}
+    >
+      <span
+        className="h-px flex-1"
+        style={{ background: "var(--cr-line-strong)" }}
+      />
+      or
+      <span
+        className="h-px flex-1"
+        style={{ background: "var(--cr-line-strong)" }}
+      />
+    </div>
+  );
+}
+
+function MagicGlyph() {
+  return (
+    <svg
+      width={16}
+      height={16}
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M2 4h12v7H2zM2 4l6 4 6-4" />
     </svg>
   );
 }
