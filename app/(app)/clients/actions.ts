@@ -5,6 +5,8 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { CreateClientSchema, UpdateClientSchema } from "@/lib/domain/client";
+import { PLAN_LIMITS, formatLimit } from "@/lib/plans";
+import { PLAN_LABELS } from "@/lib/stripe/config";
 import { track } from "@/lib/analytics";
 
 export type ActionResult =
@@ -54,6 +56,31 @@ export async function createClientAction(
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
+  // Plan-tier client cap. Counted against non-archived clients only, so
+  // archiving a client frees a slot. RLS scopes both reads to this
+  // workspace, so the count is workspace-local.
+  const { data: workspace } = await supabase
+    .from("workspaces")
+    .select("plan")
+    .eq("id", workspace_id)
+    .maybeSingle();
+  const plan = workspace?.plan ?? "oss";
+  const cap = PLAN_LIMITS[plan].activeClients;
+  if (Number.isFinite(cap)) {
+    const { count: activeCount } = await supabase
+      .from("clients")
+      .select("*", { count: "exact", head: true })
+      .eq("workspace_id", workspace_id)
+      .eq("archived", false);
+    if ((activeCount ?? 0) >= cap) {
+      return {
+        ok: false,
+        error: `You're at your ${PLAN_LABELS[plan]} plan's limit of ${formatLimit(cap)} active clients. Archive one, or upgrade your plan from Billing to add more.`,
+      };
+    }
+  }
+
   const { data, error } = await supabase
     .from("clients")
     .insert({ ...parsed.data, workspace_id })
