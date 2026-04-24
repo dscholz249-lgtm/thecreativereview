@@ -1,6 +1,8 @@
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { AppNav } from "@/components/app-nav";
+import { PasswordSetupModal } from "@/components/password-setup-modal";
 
 export default async function AppLayout({
   children,
@@ -36,12 +38,19 @@ export default async function AppLayout({
   const workspaceName =
     (profile?.workspaces as { name: string } | null)?.name ?? "Workspace";
 
+  // Invited admins land here with a magic-link session but no password.
+  // The admin-invite redemption action sets this cookie; the setup modal
+  // reads it on first render and clears it via its own action.
+  const jar = await cookies();
+  const needsPassword = jar.get("cr_needs_password")?.value === "1";
+
   return (
     <div className="cr-surface flex min-h-screen flex-col">
       <AppNav workspaceName={workspaceName} userEmail={user.email ?? ""} />
       <main className="mx-auto w-full max-w-[1200px] flex-1 px-6 py-9 sm:px-10 sm:py-10">
         {children}
       </main>
+      {needsPassword ? <PasswordSetupModal open /> : null}
     </div>
   );
 }
