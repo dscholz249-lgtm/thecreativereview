@@ -146,6 +146,8 @@ export type Database = {
           email: string;
           name: string | null;
           timezone: string;
+          invite_token: string | null;
+          invite_expires_at: Timestamp | null;
           created_at: Timestamp;
         };
         Insert: {
@@ -155,6 +157,8 @@ export type Database = {
           email: string;
           name?: string | null;
           timezone?: string;
+          invite_token?: string | null;
+          invite_expires_at?: Timestamp | null;
           created_at?: Timestamp;
         };
         Update: {
@@ -164,6 +168,8 @@ export type Database = {
           email?: string;
           name?: string | null;
           timezone?: string;
+          invite_token?: string | null;
+          invite_expires_at?: Timestamp | null;
           created_at?: Timestamp;
         };
         Relationships: [
@@ -431,6 +437,39 @@ export type Database = {
           payload_json?: Json;
           sent_at?: Timestamp | null;
           opened_at?: Timestamp | null;
+          created_at?: Timestamp;
+        };
+        Relationships: [];
+      };
+      asset_share_tokens: {
+        Row: {
+          id: string;
+          token: string;
+          asset_id: string;
+          asset_version_id: string | null;
+          created_by_reviewer_id: string;
+          expires_at: Timestamp;
+          revoked_at: Timestamp | null;
+          created_at: Timestamp;
+        };
+        Insert: {
+          id?: string;
+          token: string;
+          asset_id: string;
+          asset_version_id?: string | null;
+          created_by_reviewer_id: string;
+          expires_at: Timestamp;
+          revoked_at?: Timestamp | null;
+          created_at?: Timestamp;
+        };
+        Update: {
+          id?: string;
+          token?: string;
+          asset_id?: string;
+          asset_version_id?: string | null;
+          created_by_reviewer_id?: string;
+          expires_at?: Timestamp;
+          revoked_at?: Timestamp | null;
           created_at?: Timestamp;
         };
         Relationships: [];
