@@ -30,15 +30,39 @@ const jetbrainsMono = JetBrains_Mono({
   display: "swap",
 });
 
+const description =
+  "A focused creative review and approval tool for freelancers and small teams. Clean approvals, click-to-pin feedback.";
+
 export const metadata: Metadata = {
-  title: "The Creative Review",
-  description:
-    "A focused creative review and approval tool for freelancers and small teams. Clean approvals, click-to-pin feedback.",
+  // metadataBase lets Next.js resolve the relative opengraph-image /
+  // twitter-image URLs against the live origin. In local dev it'll pick
+  // up localhost:3000 from the env fallback.
+  metadataBase: new URL(env.NEXT_PUBLIC_APP_URL),
+  title: {
+    default: "The Creative Review",
+    template: "%s · The Creative Review",
+  },
+  description,
   // Favicon pulls straight from the brand kit in public/brand so updates
   // are a file swap, not a code change. Same v2 paper glyph the logo
   // component uses — the ink stroke + green panel read fine at 32px.
   icons: {
     icon: "/brand/logo-glyph-2.svg",
+  },
+  // The OG + Twitter images auto-resolve from app/opengraph-image.tsx +
+  // app/twitter-image.tsx (Next 16 file convention). Only the text
+  // metadata needs to live here.
+  openGraph: {
+    title: "The Creative Review — ship the work, skip the email thread.",
+    description,
+    url: "/",
+    siteName: "The Creative Review",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "The Creative Review",
+    description,
   },
 };
 
