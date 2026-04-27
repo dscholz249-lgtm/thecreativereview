@@ -27,12 +27,6 @@ export function LandingFooter() {
           <Link href="#pricing" className="hover:text-[var(--cr-ink)]">
             Pricing
           </Link>
-          <Link href="/login" className="hover:text-[var(--cr-ink)]">
-            Log in
-          </Link>
-          <Link href="/signup" className="hover:text-[var(--cr-ink)]">
-            Sign up
-          </Link>
         </nav>
       </div>
       <div
