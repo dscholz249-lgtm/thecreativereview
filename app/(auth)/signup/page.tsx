@@ -26,6 +26,7 @@ export default function SignupPage() {
       }
       pitchSubcopy="Spin up a workspace in under a minute. Invite your clients, upload an asset, ship approvals with the receipts to prove it."
       bullets={[
+        { dotColor: "var(--cr-accent-green)", label: "7-day free trial" },
         { dotColor: "var(--cr-constructive)", label: "Cancel anytime" },
       ]}
     >
@@ -40,7 +41,7 @@ export default function SignupPage() {
         Create your studio
       </h2>
       <p className="mb-7 text-[15px]" style={{ color: "var(--cr-muted)" }}>
-        Two minutes to spin up.
+        Two minutes to spin up · free for 7 days.
       </p>
 
       <form action={action}>

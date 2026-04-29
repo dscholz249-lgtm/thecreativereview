@@ -80,8 +80,9 @@ export function LandingPricing() {
             className="mt-4 text-[17px]"
             style={{ color: "var(--cr-ink-2)" }}
           >
-            Start on any tier, switch freely from your billing page. No
-            per-reviewer charges — your clients never need an account.
+            Every plan starts with a 7-day free trial — no card up front.
+            Switch tiers freely from your billing page. No per-reviewer
+            charges; your clients never need an account.
           </p>
         </div>
 
@@ -159,7 +160,17 @@ export function LandingPricing() {
           className="mt-10 text-center text-[13px]"
           style={{ color: "var(--cr-muted)" }}
         >
-          Self-hosted? Creative Review is open source under AGPL-3.0.
+          Want to self-host? Creative Review is open source under AGPL-3.0
+          —{" "}
+          <a
+            href="https://github.com/dscholz249-lgtm/thecreativereview"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="cr-link"
+          >
+            grab the source on GitHub
+          </a>
+          {" "}and run your own.
         </p>
       </div>
     </section>

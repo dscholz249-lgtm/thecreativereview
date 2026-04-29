@@ -169,20 +169,26 @@ async function handleSubscriptionDeleted(
     return;
   }
 
+  // Don't revert to 'oss' — that value is reserved for self-hosted
+  // forks now. Just clear the subscription ID; the (app) layout's
+  // paywall picks up the lapsed state from `stripe_subscription_id IS
+  // NULL && plan != 'oss' && trial expired`. Keeping the plan as-is
+  // means a re-subscribe on the same tier is a no-op for the rest of
+  // the app (cap math etc.).
   const admin = createAdminClient();
   const { error } = await admin
     .from("workspaces")
-    .update({ plan: "oss", stripe_subscription_id: null })
+    .update({ stripe_subscription_id: null })
     .eq("id", workspaceId);
   if (error) {
     console.error(
-      `[stripe-webhook] subscription.deleted failed to downgrade workspace ${workspaceId}`,
+      `[stripe-webhook] subscription.deleted failed to clear sub_id for workspace ${workspaceId}`,
       error,
     );
     return;
   }
   console.log(
-    `[stripe-webhook] subscription.deleted downgraded workspace=${workspaceId} → oss`,
+    `[stripe-webhook] subscription.deleted cleared sub_id for workspace=${workspaceId} (paywall engages on next request)`,
   );
 }
 
