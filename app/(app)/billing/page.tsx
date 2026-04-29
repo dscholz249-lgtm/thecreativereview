@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { PageHeading } from "@/components/page-heading";
 import { PLAN_LABELS } from "@/lib/stripe/config";
+import { getBillingState } from "@/lib/trial";
 import type { WorkspacePlan } from "@/lib/database.types";
 import {
   createCheckoutSessionAction,
@@ -19,9 +20,19 @@ const PAID_PLANS: Array<{ id: PaidPlan; tagline: string; featured: boolean }> = 
 export default async function BillingPage({
   searchParams,
 }: {
-  searchParams: Promise<{ checkout?: string; plan?: string; changed?: string }>;
+  searchParams: Promise<{
+    checkout?: string;
+    plan?: string;
+    changed?: string;
+    lapsed?: string;
+  }>;
 }) {
-  const { checkout, plan: changedTo, changed } = await searchParams;
+  const {
+    checkout,
+    plan: changedTo,
+    changed,
+    lapsed,
+  } = await searchParams;
   const supabase = await createClient();
 
   const {
@@ -38,13 +49,16 @@ export default async function BillingPage({
 
   const { data: workspace } = await supabase
     .from("workspaces")
-    .select("id, name, plan, stripe_customer_id, stripe_subscription_id")
+    .select(
+      "id, name, plan, stripe_customer_id, stripe_subscription_id, trial_ends_at",
+    )
     .eq("id", profile.workspace_id)
     .maybeSingle();
   if (!workspace) redirect("/login");
 
   const currentPlan = workspace.plan;
   const hasCustomer = Boolean(workspace.stripe_customer_id);
+  const billingState = getBillingState(workspace);
 
   return (
     <>
@@ -53,6 +67,20 @@ export default async function BillingPage({
         description="Manage your Creative Review subscription."
       />
 
+      {lapsed === "1" && billingState.kind === "lapsed" ? (
+        <Banner tone="warn">
+          Your trial has ended. Pick a plan below to keep your workspace
+          live — Stripe charges right away and access is restored within a
+          few seconds.
+        </Banner>
+      ) : null}
+      {billingState.kind === "trialing" ? (
+        <Banner tone="constructive">
+          You&apos;re on the free trial — {billingState.daysLeft}{" "}
+          {billingState.daysLeft === 1 ? "day" : "days"} left. Subscribe
+          any time to lock in a plan and skip the lapse.
+        </Banner>
+      ) : null}
       {checkout === "success" ? (
         <Banner tone="constructive">
           Thanks — your subscription is being provisioned. Plan usually updates
@@ -84,18 +112,42 @@ export default async function BillingPage({
             }}
           >
             {PLAN_LABELS[currentPlan]}
-            {currentPlan === "oss" ? (
+            {billingState.kind === "active" ? (
+              <span className="cr-badge cr-badge-approved">
+                <span className="cr-badge-dot" />
+                Active
+              </span>
+            ) : billingState.kind === "trialing" ? (
+              <span className="cr-badge">
+                <span
+                  className="cr-badge-dot"
+                  style={{ background: "var(--cr-accent-green)" }}
+                />
+                Trial · {billingState.daysLeft}{" "}
+                {billingState.daysLeft === 1 ? "day" : "days"} left
+              </span>
+            ) : billingState.kind === "lapsed" ? (
+              <span
+                className="cr-badge"
+                style={{
+                  background: "var(--cr-destructive-soft)",
+                  color: "var(--cr-destructive-ink)",
+                  borderColor: "var(--cr-destructive-ink)",
+                }}
+              >
+                <span
+                  className="cr-badge-dot"
+                  style={{ background: "var(--cr-destructive-ink)" }}
+                />
+                Trial ended
+              </span>
+            ) : (
               <span className="cr-badge">
                 <span
                   className="cr-badge-dot"
                   style={{ background: "var(--cr-line-strong)" }}
                 />
-                Free
-              </span>
-            ) : (
-              <span className="cr-badge cr-badge-approved">
-                <span className="cr-badge-dot" />
-                Active
+                Self-hosted
               </span>
             )}
           </p>

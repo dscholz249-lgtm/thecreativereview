@@ -34,6 +34,7 @@ export type Database = {
           white_label: boolean;
           stripe_customer_id: string | null;
           stripe_subscription_id: string | null;
+          trial_ends_at: Timestamp | null;
           created_at: Timestamp;
         };
         Insert: {
@@ -46,6 +47,7 @@ export type Database = {
           white_label?: boolean;
           stripe_customer_id?: string | null;
           stripe_subscription_id?: string | null;
+          trial_ends_at?: Timestamp | null;
           created_at?: Timestamp;
         };
         Update: {
@@ -58,6 +60,7 @@ export type Database = {
           white_label?: boolean;
           stripe_customer_id?: string | null;
           stripe_subscription_id?: string | null;
+          trial_ends_at?: Timestamp | null;
           created_at?: Timestamp;
         };
         Relationships: [];

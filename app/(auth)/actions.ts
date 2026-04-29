@@ -52,10 +52,22 @@ export async function signup(
   // Bootstrap workspace + admin_profile via service role. Required because no
   // admin_profile exists yet, so RLS can't express this insert. See
   // server/admin-client.ts for the list of sanctioned service-role call sites.
+  //
+  // Hosted signups land on plan='solo' with a 7-day trial — never 'oss'.
+  // 'oss' is reserved for self-hosted forks of the AGPL repo. The (app)
+  // layout enforces the paywall once trial_ends_at is in the past and
+  // there's no active stripe_subscription_id.
   const admin = createAdminClient();
+  const trialEndsAt = new Date(
+    Date.now() + 7 * 24 * 60 * 60 * 1000,
+  ).toISOString();
   const { data: workspace, error: wsError } = await admin
     .from("workspaces")
-    .insert({ name: parsed.data.workspace_name })
+    .insert({
+      name: parsed.data.workspace_name,
+      plan: "solo",
+      trial_ends_at: trialEndsAt,
+    })
     .select("id")
     .single();
   if (wsError || !workspace) {

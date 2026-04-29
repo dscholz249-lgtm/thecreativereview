@@ -2,12 +2,20 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { env } from "@/lib/env";
 
-// Next.js 16 proxy (replaces middleware.ts). Refreshes the Supabase session
-// cookie on every request per Supabase SSR requirements. Route protection
-// lives in the (app)/layout.tsx via redirect() — this file only keeps the
-// session alive.
+// Next.js 16 proxy (replaces middleware.ts). Two responsibilities:
+//   1. Refresh the Supabase session cookie on every request per Supabase
+//      SSR requirements.
+//   2. Forward x-pathname into the request headers so the (app) layout
+//      can paywall lapsed trials without bouncing the user off /billing
+//      in an infinite redirect loop. Route protection itself still lives
+//      in (app)/layout.tsx via redirect().
 export default async function proxy(request: NextRequest) {
-  let response = NextResponse.next({ request });
+  // Setting on request.headers (not response.headers) makes it readable
+  // via `headers()` in Server Components further down the request.
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set("x-pathname", request.nextUrl.pathname);
+
+  let response = NextResponse.next({ request: { headers: requestHeaders } });
 
   const supabase = createServerClient(
     env.NEXT_PUBLIC_SUPABASE_URL,
@@ -21,7 +29,9 @@ export default async function proxy(request: NextRequest) {
           cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value),
           );
-          response = NextResponse.next({ request });
+          response = NextResponse.next({
+            request: { headers: requestHeaders },
+          });
           cookiesToSet.forEach(({ name, value, options }) =>
             response.cookies.set(name, value, options),
           );
