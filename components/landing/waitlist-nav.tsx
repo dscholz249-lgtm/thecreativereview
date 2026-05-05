@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { CreativeReviewLogo } from "@/components/creative-review-logo";
 
-// Waitlist variant of the marketing nav. Replaces "Start free" with a
-// scroll-link to the hero form and drops the in-app login link so
-// pre-launch visitors aren't sent to a screen that won't accept them.
+// Waitlist variant of the marketing nav. Replaces the "Get started"
+// CTA with a scroll-link to the hero form and drops the in-app login
+// link so pre-launch visitors aren't sent to a screen that won't accept
+// them.
 export function WaitlistNav() {
   return (
     <header

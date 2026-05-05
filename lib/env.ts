@@ -11,7 +11,7 @@ const schema = z.object({
   // Controls what the anonymous `/` visitor sees:
   //   waitlist → pre-launch "get early access" form (default, fail-safe for
   //              pre-launch production)
-  //   live     → full marketing landing with Start free / Log in CTAs
+  //   live     → full marketing landing with Get started / Log in CTAs
   // Flip to 'live' on Railway when launching; no code deploy needed.
   NEXT_PUBLIC_LAUNCH_MODE: z.enum(["waitlist", "live"]).default("waitlist"),
   // Google Analytics 4 measurement ID (e.g. "G-XXXXXXXXXX"). Unset in

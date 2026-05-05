@@ -38,7 +38,7 @@ export function LandingNav() {
               Log in
             </Link>
             <Link href="/signup" className="cr-btn cr-btn-sm cr-btn-primary">
-              Start free
+              Get started
             </Link>
           </div>
         </nav>

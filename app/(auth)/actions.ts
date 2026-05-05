@@ -41,13 +41,36 @@ export async function signup(
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };
   }
 
-  const supabase = await createClient();
-  const { data, error } = await supabase.auth.signUp({
-    email: parsed.data.email,
-    password: parsed.data.password,
-  });
-  if (error) return { ok: false, error: error.message };
-  if (!data.user) return { ok: false, error: "Signup did not return a user" };
+  // We pre-confirm the email via the service-role admin API instead of
+  // going through supabase.auth.signUp(), which mints a confirmation
+  // link the user has to click in their inbox. The link flow is fragile
+  // (deliverability, link-scanner pre-clicks, mobile mail clients
+  // stripping params) and slows hosted signup to a crawl. The trade-off
+  // is no email verification at signup; the trial → card requirement
+  // gives us downstream proof the email belongs to a real person before
+  // any money moves.
+  const admin = createAdminClient();
+  const { data: createData, error: createError } =
+    await admin.auth.admin.createUser({
+      email: parsed.data.email,
+      password: parsed.data.password,
+      email_confirm: true,
+    });
+  if (createError || !createData.user) {
+    const msg = createError?.message ?? "Signup failed";
+    if (
+      msg.toLowerCase().includes("already") ||
+      msg.toLowerCase().includes("registered") ||
+      msg.toLowerCase().includes("exists")
+    ) {
+      return {
+        ok: false,
+        error: "That email is already registered. Try logging in instead.",
+      };
+    }
+    return { ok: false, error: msg };
+  }
+  const userId = createData.user.id;
 
   // Bootstrap workspace + admin_profile via service role. Required because no
   // admin_profile exists yet, so RLS can't express this insert. See
@@ -57,7 +80,6 @@ export async function signup(
   // 'oss' is reserved for self-hosted forks of the AGPL repo. The (app)
   // layout enforces the paywall once trial_ends_at is in the past and
   // there's no active stripe_subscription_id.
-  const admin = createAdminClient();
   const trialEndsAt = new Date(
     Date.now() + 7 * 24 * 60 * 60 * 1000,
   ).toISOString();
@@ -71,35 +93,51 @@ export async function signup(
     .select("id")
     .single();
   if (wsError || !workspace) {
+    // Roll back the auth user so the email isn't permanently blocked
+    // from re-signup. Best-effort — log + bubble the original error.
+    await admin.auth.admin.deleteUser(userId);
     return { ok: false, error: wsError?.message ?? "Failed to create workspace" };
   }
 
   const { error: profileError } = await admin.from("admin_profiles").insert({
-    user_id: data.user.id,
+    user_id: userId,
     workspace_id: workspace.id,
     role: "owner",
   });
   if (profileError) {
-    // Best-effort cleanup; workspace will be orphaned until a cleanup job runs.
+    // Same rollback pattern: drop the workspace and the auth user so a
+    // retry can succeed cleanly.
     await admin.from("workspaces").delete().eq("id", workspace.id);
+    await admin.auth.admin.deleteUser(userId);
     return { ok: false, error: profileError.message };
   }
 
   track("signup", {
-    user_id: data.user.id,
+    user_id: userId,
     workspace_id: workspace.id,
-    properties: { confirmed: Boolean(data.session) },
+    properties: { confirmed: true },
   });
 
-  if (data.session) {
-    revalidatePath("/", "layout");
-    redirect("/dashboard");
+  // Drop them straight into a session via the public client so cookies
+  // get written to the response. signInWithPassword is fine here because
+  // we just minted the user with a known password seconds ago.
+  const supabase = await createClient();
+  const { error: signInError } = await supabase.auth.signInWithPassword({
+    email: parsed.data.email,
+    password: parsed.data.password,
+  });
+  if (signInError) {
+    // The account is fully usable — they can hit /login to recover. Log
+    // the unexpected failure so we can investigate if it ever happens.
+    console.error("[signup] sign-in after createUser failed", signInError);
+    return {
+      ok: false,
+      error: "Account created. Please log in to finish.",
+    };
   }
-  return {
-    ok: true,
-    message:
-      "Check your email for a confirmation link to finish creating your account.",
-  };
+
+  revalidatePath("/", "layout");
+  redirect("/dashboard");
 }
 
 export async function login(
