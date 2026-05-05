@@ -33,7 +33,7 @@ export function LandingHero() {
       </p>
       <div className="mt-9 flex flex-wrap items-center gap-3.5">
         <Link href="/signup" className="cr-btn cr-btn-primary cr-btn-lg">
-          Start a free studio <ArrowRight size={16} />
+          Start your studio <ArrowRight size={16} />
         </Link>
         <Link href="#features" className="cr-btn cr-btn-lg cr-btn-ghost">
           See a sample review →

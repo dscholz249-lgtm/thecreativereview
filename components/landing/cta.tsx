@@ -41,7 +41,7 @@ export function LandingCta() {
               boxShadow: "2px 2px 0 var(--cr-accent-green)",
             }}
           >
-            Start free <ArrowRight size={16} />
+            Start your studio <ArrowRight size={16} />
           </Link>
           <Link
             href="/login"
