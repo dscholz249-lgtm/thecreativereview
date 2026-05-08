@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { PageHeading } from "@/components/page-heading";
-import { PLAN_LABELS } from "@/lib/stripe/config";
+import { PLAN_LABELS, PLAN_PRICES_DISPLAY } from "@/lib/stripe/config";
 import { getBillingState } from "@/lib/trial";
 import type { WorkspacePlan } from "@/lib/database.types";
 import {
@@ -103,7 +103,7 @@ export default async function BillingPage({
         <div>
           <p className="cr-eyebrow">Current plan</p>
           <p
-            className="mt-2 flex items-center gap-2.5"
+            className="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1"
             style={{
               fontFamily: "var(--font-display), serif",
               fontWeight: 800,
@@ -111,7 +111,32 @@ export default async function BillingPage({
               letterSpacing: "-0.02em",
             }}
           >
-            {PLAN_LABELS[currentPlan]}
+            <span className="flex items-center gap-2.5">
+              {PLAN_LABELS[currentPlan]}
+              {PLAN_PRICES_DISPLAY[currentPlan] ? (
+                <>
+                  <span
+                    style={{
+                      color: "var(--cr-ink)",
+                      fontSize: 26,
+                    }}
+                  >
+                    {PLAN_PRICES_DISPLAY[currentPlan]?.amount}
+                  </span>
+                  <span
+                    className="text-[15px]"
+                    style={{
+                      color: "var(--cr-muted)",
+                      fontFamily: "var(--font-body), sans-serif",
+                      fontWeight: 500,
+                      letterSpacing: 0,
+                    }}
+                  >
+                    {PLAN_PRICES_DISPLAY[currentPlan]?.cadence}
+                  </span>
+                </>
+              ) : null}
+            </span>
             {billingState.kind === "active" ? (
               <span className="cr-badge cr-badge-approved">
                 <span className="cr-badge-dot" />
@@ -208,6 +233,27 @@ export default async function BillingPage({
               >
                 {p.tagline}
               </p>
+              {PLAN_PRICES_DISPLAY[p.id] ? (
+                <div className="mt-4 flex items-baseline gap-1">
+                  <span
+                    style={{
+                      fontFamily: "var(--font-display), serif",
+                      fontWeight: 800,
+                      fontSize: 36,
+                      letterSpacing: "-0.03em",
+                      lineHeight: 1,
+                    }}
+                  >
+                    {PLAN_PRICES_DISPLAY[p.id]?.amount}
+                  </span>
+                  <span
+                    className="text-[14px]"
+                    style={{ color: "var(--cr-muted)" }}
+                  >
+                    {PLAN_PRICES_DISPLAY[p.id]?.cadence}
+                  </span>
+                </div>
+              ) : null}
               <div className="mt-6">
                 {isCurrent ? (
                   <button
