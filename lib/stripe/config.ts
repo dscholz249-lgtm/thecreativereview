@@ -48,6 +48,22 @@ export const PLAN_LABELS: Record<WorkspacePlan, string> = {
   agency: "Agency",
 };
 
+// Display-only price strings shown on /billing and /pricing. Stripe is
+// the authoritative source of billed amounts — keep these in sync with
+// the live STRIPE_PRICE_* IDs and components/landing/pricing.tsx.
+//
+// `oss` is null because the self-hosted tier is never sold on the
+// hosted product (it's only ever set on a manual fork).
+export const PLAN_PRICES_DISPLAY: Record<
+  WorkspacePlan,
+  { amount: string; cadence: string } | null
+> = {
+  oss: null,
+  solo: { amount: "$5", cadence: "/mo" },
+  studio: { amount: "$10", cadence: "/mo" },
+  agency: { amount: "$20", cadence: "/mo" },
+};
+
 export function planFromPriceId(priceId: string): PaidPlan | null {
   const prices = getPlanPrices();
   for (const [plan, id] of Object.entries(prices) as Array<[PaidPlan, string]>) {
