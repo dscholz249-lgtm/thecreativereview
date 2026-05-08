@@ -1,11 +1,18 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/database.types";
 
-// Single source of truth for the bucket name + path layout used by the
-// Supabase Storage RLS policies (supabase/migrations/20260417120000_initial_schema.sql).
-// Path layout: {bucket}/{workspace_id}/{asset_id}/{version_id}/{filename}
-// The workspace_id must be the first path segment — RLS keys off it.
+// Single source of truth for bucket names + path layouts used by the
+// Supabase Storage RLS policies (supabase/migrations/20260417120000_initial_schema.sql
+// + 20260508120000_client_logos_bucket.sql).
+// Path layout for both: {workspace_id}/.../filename — RLS keys off the
+// first path segment.
 export const ASSET_BUCKET = "asset-files";
+export const CLIENT_LOGO_BUCKET = "client-logos";
+
+// Cap client-logo uploads at 1 MB. Logos are decorative (not the
+// primary content of the app) so we err small; the form also restricts
+// to image/* via the accept attribute.
+export const CLIENT_LOGO_MAX_BYTES = 1 * 1024 * 1024;
 
 export function buildStoragePath(params: {
   workspace_id: string;

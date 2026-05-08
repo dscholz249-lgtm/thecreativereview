@@ -1,5 +1,6 @@
 "use server";
 
+import { randomUUID } from "crypto";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -7,7 +8,36 @@ import { createClient } from "@/lib/supabase/server";
 import { CreateClientSchema, UpdateClientSchema } from "@/lib/domain/client";
 import { PLAN_LIMITS, formatLimit } from "@/lib/plans";
 import { PLAN_LABELS } from "@/lib/stripe/config";
+import {
+  CLIENT_LOGO_BUCKET,
+  CLIENT_LOGO_MAX_BYTES,
+} from "@/lib/supabase/storage";
 import { track } from "@/lib/analytics";
+
+const ALLOWED_LOGO_MIME = new Set([
+  "image/png",
+  "image/jpeg",
+  "image/webp",
+  "image/svg+xml",
+]);
+
+// Pulls the optional logo file off a FormData and validates type + size.
+// Returns null when no file was attached (logos are optional). Returns
+// a descriptive error string when the file is invalid so the caller can
+// surface it as a fieldErrors.logo entry.
+function readLogoFile(
+  formData: FormData,
+): { file: File } | { error: string } | null {
+  const raw = formData.get("logo");
+  if (!(raw instanceof File) || raw.size === 0) return null;
+  if (!ALLOWED_LOGO_MIME.has(raw.type)) {
+    return { error: "Logo must be a PNG, JPG, WebP, or SVG image." };
+  }
+  if (raw.size > CLIENT_LOGO_MAX_BYTES) {
+    return { error: "Logo must be under 1 MB." };
+  }
+  return { file: raw };
+}
 
 export type ActionResult =
   | { ok: true }
@@ -43,10 +73,20 @@ export async function createClientAction(
   const parsed = CreateClientSchema.safeParse({
     name: formData.get("name"),
     primary_email: formData.get("primary_email"),
-    logo_url: formData.get("logo_url") || undefined,
+    // logo_url is computed from an upload below — never accepted from
+    // the client.
   });
   if (!parsed.success) {
     return { ok: false, error: "Please fix the errors below.", fieldErrors: toFieldErrors(parsed.error) };
+  }
+
+  const logoCheck = readLogoFile(formData);
+  if (logoCheck && "error" in logoCheck) {
+    return {
+      ok: false,
+      error: "Please fix the errors below.",
+      fieldErrors: { logo: logoCheck.error },
+    };
   }
 
   const workspace_id = await getWorkspaceId();
@@ -81,21 +121,78 @@ export async function createClientAction(
     }
   }
 
+  // Pre-mint the client_id so the storage path can include it. Storage
+  // upload happens before the row insert; if the insert later fails we
+  // best-effort clean up the uploaded object so we don't leave orphaned
+  // logo files lying around.
+  const clientId = randomUUID();
+  let logo_url: string | null = null;
+  let uploadedPath: string | null = null;
+
+  if (logoCheck && "file" in logoCheck) {
+    const file = logoCheck.file;
+    const ext =
+      file.name.split(".").pop()?.toLowerCase().replace(/[^a-z0-9]/g, "") ||
+      mimeToExt(file.type);
+    const path = `${workspace_id}/${clientId}/logo.${ext}`;
+    const { error: uploadError } = await supabase.storage
+      .from(CLIENT_LOGO_BUCKET)
+      .upload(path, file, {
+        upsert: true,
+        contentType: file.type,
+        cacheControl: "3600",
+      });
+    if (uploadError) {
+      return {
+        ok: false,
+        error: `Logo upload failed: ${uploadError.message}`,
+      };
+    }
+    uploadedPath = path;
+    const { data: urlData } = supabase.storage
+      .from(CLIENT_LOGO_BUCKET)
+      .getPublicUrl(path);
+    logo_url = urlData.publicUrl;
+  }
+
   const { data, error } = await supabase
     .from("clients")
-    .insert({ ...parsed.data, workspace_id })
+    .insert({ ...parsed.data, id: clientId, logo_url, workspace_id })
     .select("id")
     .single();
-  if (error || !data) return { ok: false, error: error?.message ?? "Insert failed." };
+  if (error || !data) {
+    if (uploadedPath) {
+      await supabase.storage.from(CLIENT_LOGO_BUCKET).remove([uploadedPath]);
+    }
+    return { ok: false, error: error?.message ?? "Insert failed." };
+  }
 
   track("client_created", {
     user_id: user?.id ?? null,
     workspace_id,
-    properties: { client_id: data.id },
+    properties: { client_id: data.id, has_logo: Boolean(logo_url) },
   });
 
   revalidatePath("/clients");
   redirect(`/clients/${data.id}`);
+}
+
+// Fallback when File.name has no extension (rare but possible — e.g.
+// drag-drops from clipboard managers). Keeps the path well-formed
+// without sniffing the bytes.
+function mimeToExt(mime: string): string {
+  switch (mime) {
+    case "image/png":
+      return "png";
+    case "image/jpeg":
+      return "jpg";
+    case "image/webp":
+      return "webp";
+    case "image/svg+xml":
+      return "svg";
+    default:
+      return "img";
+  }
 }
 
 export async function updateClientAction(

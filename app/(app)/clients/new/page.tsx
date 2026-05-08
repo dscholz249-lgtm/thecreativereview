@@ -44,17 +44,18 @@ export default function NewClientPage() {
           </FormField>
 
           <FormField
-            label="Logo URL"
-            name="logo_url"
-            error={err?.fieldErrors?.logo_url}
-            hint="Optional. Paste a direct link to a logo image."
+            label="Logo"
+            name="logo"
+            error={err?.fieldErrors?.logo}
+            hint="Optional. Square images work best. PNG / JPG / SVG, up to 1 MB."
           >
             <input
-              id="logo_url"
-              name="logo_url"
-              type="url"
-              placeholder="https://…"
+              id="logo"
+              name="logo"
+              type="file"
+              accept="image/png,image/jpeg,image/webp,image/svg+xml"
               className="cr-input"
+              style={{ maxWidth: 360 }}
             />
           </FormField>
 
