@@ -23,6 +23,16 @@ const schema = z.object({
   STRIPE_SECRET_KEY: z.string().optional(),
   STRIPE_WEBHOOK_SECRET: z.string().optional(),
   AMPLITUDE_API_KEY: z.string().optional(),
+  // Single super-admin email — the only user allowed to load
+  // /superadmin (cross-workspace overview). Lowercased + trimmed so a
+  // dashboard typo with whitespace or caps doesn't lock out access.
+  // Unset on local dev means /superadmin is hard-disabled.
+  SUPER_ADMIN_EMAIL: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .email()
+    .optional(),
 });
 
 type ServerEnv = z.infer<typeof schema>;
@@ -41,6 +51,7 @@ function load(): ServerEnv {
     STRIPE_SECRET_KEY: emptyToUndefined(process.env.STRIPE_SECRET_KEY),
     STRIPE_WEBHOOK_SECRET: emptyToUndefined(process.env.STRIPE_WEBHOOK_SECRET),
     AMPLITUDE_API_KEY: emptyToUndefined(process.env.AMPLITUDE_API_KEY),
+    SUPER_ADMIN_EMAIL: emptyToUndefined(process.env.SUPER_ADMIN_EMAIL),
   });
   return cached;
 }
