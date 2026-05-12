@@ -47,6 +47,18 @@ export default async function AppLayout({
   } | null;
   const workspaceName = workspace?.name ?? "Workspace";
 
+  // Dual-role detection: if this admin is also a reviewer on someone
+  // else's client, surface a "Reviewer inbox" link in the nav so they
+  // can switch sides without typing a URL. Cheap query — single index
+  // hit on client_reviewers(auth_user_id).
+  const { data: reviewerLink } = await supabase
+    .from("client_reviewers")
+    .select("id")
+    .eq("auth_user_id", user.id)
+    .limit(1)
+    .maybeSingle();
+  const isAlsoReviewer = Boolean(reviewerLink);
+
   // Trial / lapsed gate. proxy.ts forwards x-pathname so the redirect
   // can avoid /billing (and thereby avoid an infinite loop). OSS rows
   // are exempt — those are reserved for self-hosted forks of the AGPL
@@ -71,7 +83,11 @@ export default async function AppLayout({
       {billingState.kind === "trialing" ? (
         <TrialBanner daysLeft={billingState.daysLeft} />
       ) : null}
-      <AppNav workspaceName={workspaceName} userEmail={user.email ?? ""} />
+      <AppNav
+        workspaceName={workspaceName}
+        userEmail={user.email ?? ""}
+        isAlsoReviewer={isAlsoReviewer}
+      />
       <main className="mx-auto w-full max-w-[1200px] flex-1 px-6 py-9 sm:px-10 sm:py-10">
         {children}
       </main>
