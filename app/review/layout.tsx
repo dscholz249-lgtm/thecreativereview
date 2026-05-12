@@ -26,6 +26,16 @@ export default async function ReviewLayout({
     redirect("/dashboard");
   }
 
+  // Dual-role detection: if this reviewer is also an admin somewhere
+  // (their own studio + reviewing for another), surface a "Studio
+  // dashboard" link in the header so they can switch sides.
+  const { data: adminLink } = await supabase
+    .from("admin_profiles")
+    .select("user_id")
+    .eq("user_id", user.id)
+    .maybeSingle();
+  const isAlsoAdmin = Boolean(adminLink);
+
   return (
     <div className="cr-surface flex min-h-screen flex-col">
       <header
@@ -40,6 +50,15 @@ export default async function ReviewLayout({
             <CreativeReviewLogo fontSize={16} />
           </Link>
           <div className="flex items-center gap-4 text-[14px]">
+            {isAlsoAdmin ? (
+              <Link
+                href="/dashboard"
+                className="cr-link"
+                style={{ fontWeight: 600 }}
+              >
+                Studio dashboard →
+              </Link>
+            ) : null}
             <span style={{ color: "var(--cr-muted)" }}>
               Reviewing as{" "}
               <span style={{ color: "var(--cr-ink)", fontWeight: 600 }}>

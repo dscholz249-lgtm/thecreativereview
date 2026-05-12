@@ -17,6 +17,9 @@ import { logout } from "@/app/(auth)/actions";
 type NavProps = {
   workspaceName: string;
   userEmail: string;
+  // Show a "Reviewer inbox" link in the dropdown when the signed-in
+  // admin is also a reviewer somewhere — single-email, multiple roles.
+  isAlsoReviewer?: boolean;
 };
 
 const navItems = [
@@ -25,7 +28,11 @@ const navItems = [
   { href: "/projects", label: "Reviews", prefix: "/projects" },
 ];
 
-export function AppNav({ workspaceName, userEmail }: NavProps) {
+export function AppNav({
+  workspaceName,
+  userEmail,
+  isAlsoReviewer = false,
+}: NavProps) {
   const pathname = usePathname();
   const [, startTransition] = useTransition();
 
@@ -107,6 +114,14 @@ export function AppNav({ workspaceName, userEmail }: NavProps) {
             <DropdownMenuItem render={<Link href="/billing" />}>
               Billing
             </DropdownMenuItem>
+            {isAlsoReviewer ? (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem render={<Link href="/review/my-reviews" />}>
+                  Reviewer inbox
+                </DropdownMenuItem>
+              </>
+            ) : null}
             <DropdownMenuSeparator />
             <DropdownMenuItem
               onClick={() =>
