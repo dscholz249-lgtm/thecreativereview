@@ -5,6 +5,7 @@ import { AppNav } from "@/components/app-nav";
 import { PasswordSetupModal } from "@/components/password-setup-modal";
 import { TrialBanner } from "@/components/trial-banner";
 import { getBillingState, isLapsedAllowedPath } from "@/lib/trial";
+import { serverEnv } from "@/lib/env.server";
 
 export default async function AppLayout({
   children,
@@ -28,7 +29,22 @@ export default async function AppLayout({
   // Role gate: if there's no admin_profile, the user is not an admin and
   // should never see the admin shell. Reviewers go to their inbox; anyone
   // else (shouldn't happen) back to the landing.
+  //
+  // Exception: the platform operator (SUPER_ADMIN_EMAIL) reaches /superadmin
+  // through this layout. They may not be in admin_profiles for any
+  // workspace, so let them pass through to that specific path. Every other
+  // (app) path still gates them appropriately.
   if (!profile) {
+    const h0 = await headers();
+    const path = h0.get("x-pathname") ?? "";
+    const isSuperAdmin =
+      serverEnv.SUPER_ADMIN_EMAIL &&
+      user.email?.trim().toLowerCase() === serverEnv.SUPER_ADMIN_EMAIL;
+    if (isSuperAdmin && path.startsWith("/superadmin")) {
+      // Render the superadmin page outside the workspace shell — the
+      // page itself re-verifies SUPER_ADMIN_EMAIL before showing data.
+      return <>{children}</>;
+    }
     const { data: reviewer } = await supabase
       .from("client_reviewers")
       .select("id")
